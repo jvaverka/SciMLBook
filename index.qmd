@@ -8,12 +8,10 @@ All original content was created by Dr. Chris Rackauckas with assistance from Da
 
 Examples and applications will be shown using the Julia programming langauge.
 
-::: {.callout-note}
-You can help improve this course!
-Please
-[report mistakes](https://github.com/SciML/SciMLBook/issues/new?assignees=&labels=bug&template=bug-report.md&title=Fix+Mistake)
-you find in the content.
-Similarly,
-[suggest improvements](https://github.com/SciML/SciMLBook/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=New+Feature) 
-on how to organize and navigate this site.
+::: {.callout-important}
+This is **not** the official site for MIT course 18.337J/6.338J and may not contain most up-to-date content.
+Click [here](https://book.sciml.ai) to visit the official course site.
+
+This is site serves simply as an alternative viewing option for the course material.
+Hope you enjoy.
 :::

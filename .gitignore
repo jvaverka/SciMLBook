@@ -9,7 +9,7 @@ _book/
 code/
 
 .quarto/
-JuliaSysimage.so
-JuliaSysimage.dll
+*.so
+*.dll
 .ipynb_checkpoints/
 /.quarto/

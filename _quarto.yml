@@ -11,7 +11,7 @@ book:
     logo: sciml-book-logo.svg
   search: true
   reader-mode: true
-  repo-url: https://github.com/SciML/SciMLBook
+  repo-url: https://github.com/jvaverka/SciMLBook
   repo-actions: [edit, issue, source]
   downloads: [pdf, epub]
   chapters:
@@ -62,10 +62,10 @@ format:
 
 highlight-style: atom-one
 
-jupyter: scimlbook-1.8
+jupyter: scimlbook-1.9
 
-execute:
-  cache: true
+# execute:
+#   cache: true
 
 comments:
   hypothesis: true
