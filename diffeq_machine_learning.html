@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>MIT Parallel Computing and Scientific Machine Learning - 14&nbsp; Mixing Differential Equations and Neural Networks for Physics-Informed Learning</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./probabilistic_programming.html" rel="next">
+<link href="./pdes_and_convolutions.html" rel="prev">
+<link href="./sciml-book-logo.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./pdes_and_convolutions.html">Advanced Differential Equations</a></li><li class="breadcrumb-item"><a href="./diffeq_machine_learning.html"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Mixing Differential Equations and Neural Networks for Physics-Informed Learning</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="./sciml-book-logo.svg" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">MIT Parallel Computing and Scientific Machine Learning</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="https://github.com/jvaverka/SciMLBook" rel="" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Download" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download"><i class="bi bi-download"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.pdf">
+              <i class="bi bi-bi-file-pdf pe-1"></i>
+            Download PDF
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.epub">
+              <i class="bi bi-bi-journal pe-1"></i>
+            Download ePub
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction to Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimize.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Optimizing Serial Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sciml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction to Scientific Machine Learning through Physics-Informed Neural Networks</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dynamical_systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How Loops Work, An Introduction to Discrete Dynamics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./parallelism_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">The Basics of Single Node Parallel Computing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./styles_of_parallelism.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Different Flavors of Parallelism</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./discretizing_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Ordinary Differential Equations, Applications and Discretizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Modern Approaches</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./automatic_differentiation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Forward-Mode Automatic Differentiation (AD) via High Dimensional Algebras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./stiff_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Solving Stiff Ordinary Differential Equations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation_identification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Basic Parameter Estimation, Reverse-Mode AD, and Inverse Problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./adjoints.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Differentiable Programming and Neural Differential Equations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Modern Architectures</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mpi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Introduction to MPI.jl</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gpus.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">GPU programming</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Advanced Differential Equations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pdes_and_convolutions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PDEs, Convolutions, and the Mathematics of Locality</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./diffeq_machine_learning.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Mixing Differential Equations and Neural Networks for Physics-Informed Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic_programming.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">From Optimization to Probabilistic Programming</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./global_sensitivity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Global Sensitivity Analysis</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Advanced Topics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./profiling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Code Profiling and Optimization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./uncertainty.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Uncertainty Programming, Generalized Uncertainty Quantification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#youtube-video" id="toc-youtube-video" class="nav-link active" data-scroll-target="#youtube-video"><span class="header-section-number">14.1</span> Youtube Video</a></li>
+  <li><a href="#the-augmented-neural-ordinary-differential-equation" id="toc-the-augmented-neural-ordinary-differential-equation" class="nav-link" data-scroll-target="#the-augmented-neural-ordinary-differential-equation"><span class="header-section-number">14.2</span> The Augmented Neural Ordinary Differential Equation</a></li>
+  <li><a href="#extensions-to-other-differential-equations" id="toc-extensions-to-other-differential-equations" class="nav-link" data-scroll-target="#extensions-to-other-differential-equations"><span class="header-section-number">14.3</span> Extensions to other Differential Equations</a>
+  <ul class="collapse">
+  <li><a href="#the-universal-ordinary-differential-equation" id="toc-the-universal-ordinary-differential-equation" class="nav-link" data-scroll-target="#the-universal-ordinary-differential-equation"><span class="header-section-number">14.3.1</span> The Universal Ordinary Differential Equation</a></li>
+  </ul></li>
+  <li><a href="#deep-bsde-methods-for-high-dimensional-partial-differential-equations" id="toc-deep-bsde-methods-for-high-dimensional-partial-differential-equations" class="nav-link" data-scroll-target="#deep-bsde-methods-for-high-dimensional-partial-differential-equations"><span class="header-section-number">14.4</span> Deep BSDE Methods for High Dimensional Partial Differential Equations</a>
+  <ul class="collapse">
+  <li><a href="#understanding-the-setup-for-terminal-pdes" id="toc-understanding-the-setup-for-terminal-pdes" class="nav-link" data-scroll-target="#understanding-the-setup-for-terminal-pdes"><span class="header-section-number">14.4.1</span> Understanding the Setup for Terminal PDEs</a></li>
+  <li><a href="#the-deep-bsde-method" id="toc-the-deep-bsde-method" class="nav-link" data-scroll-target="#the-deep-bsde-method"><span class="header-section-number">14.4.2</span> The Deep BSDE Method</a></li>
+  <li><a href="#julia-implementation" id="toc-julia-implementation" class="nav-link" data-scroll-target="#julia-implementation"><span class="header-section-number">14.4.3</span> Julia Implementation</a></li>
+  <li><a href="#financial-applications-of-deep-bsdes-nonlinear-black-scholes" id="toc-financial-applications-of-deep-bsdes-nonlinear-black-scholes" class="nav-link" data-scroll-target="#financial-applications-of-deep-bsdes-nonlinear-black-scholes"><span class="header-section-number">14.4.4</span> Financial Applications of Deep BSDEs: Nonlinear Black-Scholes</a></li>
+  <li><a href="#stochastic-optimal-control-as-a-deep-bsde-application" id="toc-stochastic-optimal-control-as-a-deep-bsde-application" class="nav-link" data-scroll-target="#stochastic-optimal-control-as-a-deep-bsde-application"><span class="header-section-number">14.4.5</span> Stochastic Optimal Control as a Deep BSDE Application</a></li>
+  </ul></li>
+  <li><a href="#connections-of-reservoir-computing-to-scientific-machine-learning" id="toc-connections-of-reservoir-computing-to-scientific-machine-learning" class="nav-link" data-scroll-target="#connections-of-reservoir-computing-to-scientific-machine-learning"><span class="header-section-number">14.5</span> Connections of Reservoir Computing to Scientific Machine Learning</a></li>
+  <li><a href="#automated-equation-discovery-outputting-latex-for-dynamical-systems-from-data" id="toc-automated-equation-discovery-outputting-latex-for-dynamical-systems-from-data" class="nav-link" data-scroll-target="#automated-equation-discovery-outputting-latex-for-dynamical-systems-from-data"><span class="header-section-number">14.6</span> Automated Equation Discovery: Outputting LaTeX for Dynamical Systems from Data</a></li>
+  <li><a href="#surrogate-acceleration-methods" id="toc-surrogate-acceleration-methods" class="nav-link" data-scroll-target="#surrogate-acceleration-methods"><span class="header-section-number">14.7</span> Surrogate Acceleration Methods</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jvaverka/SciMLBook/edit/main/diffeq_machine_learning.qmd" class="toc-action">Edit this page</a></p><p><a href="https://github.com/jvaverka/SciMLBook/issues/new" class="toc-action">Report an issue</a></p><p><a href="https://github.com/jvaverka/SciMLBook/blob/main/diffeq_machine_learning.qmd" class="toc-action">View source</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Mixing Differential Equations and Neural Networks for Physics-Informed Learning</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="youtube-video" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="youtube-video"><span class="header-section-number">14.1</span> <a href="https://youtu.be/YuaVXt--gAA">Youtube Video</a></h2>
+<p>Given this background in both neural network and differential equation modeling, let’s take a moment to survey some methods which integrate the two ideas. In this course we have fully described how Physics-Informed Neural Networks (PINNs) and neural ordinary differential equations are both trained and used. There are many other methods which utilize the composition of these ideas.</p>
+<p>Julia codes for these methods are being developed, optimized, and tested in the <a href="sciml.ai">SciML</a> organization. Some packages to note are</p>
+<ul>
+<li><a href="https://github.com/SciML/NeuralPDE.jl">NeuralPDE.jl</a></li>
+<li><a href="https://github.com/SciML/DiffEqFlux.jl">DiffEqFlux.jl</a></li>
+<li><a href="https://github.com/SciML/DataDrivenDiffEq.jl">DataDrivenDiffEq.jl</a></li>
+<li><a href="https://github.com/SciML/Surrogates.jl">Surrogates.jl</a></li>
+<li><a href="https://github.com/SciML/ReservoirComputing.jl">ReservoirComputing.jl</a></li>
+</ul>
+<p>and many more collaborations with scientists around the world (too many to note). And there are some scattered packages in other languages to note too, such as:</p>
+<ul>
+<li><a href="https://github.com/lululxvi/deepxde">deepxde</a></li>
+<li><a href="https://github.com/dynamicslab/pysindy">pysindy</a></li>
+<li><a href="https://github.com/kailaix/ADCME.jl">ADCME.jl</a></li>
+</ul>
+<p>and many more. This lecture is a quick survey on different directions that people have taken so far in this field. It is by no means comprehensive.</p>
+</section>
+<section id="the-augmented-neural-ordinary-differential-equation" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="the-augmented-neural-ordinary-differential-equation"><span class="header-section-number">14.2</span> The Augmented Neural Ordinary Differential Equation</h2>
+<p>Note that not every function can be represented by an ordinary differential equation. Specifically, <span class="math inline">\(u(t)\)</span> is an <span class="math inline">\(\mathbb{R} \rightarrow \mathbb{R}^n\)</span> function which cannot loop over itself except when the solution is cyclic. The reason is because the flow of the ODE’s solution is unique from every time point, and for it to have “two directions” at a point <span class="math inline">\(u_i\)</span> in phase space would have two solutions to the problem</p>
+<p><span class="math display">\[u' = f(u,p,t)\]</span></p>
+<p>where <span class="math inline">\(u(0)=u_i\)</span>, and thus this cannot happen (with <span class="math inline">\(f\)</span> sufficiently nice). However, if we have another degree of freedom we can ensure that the ODE does not overlap with itself. This is the <a href="https://arxiv.org/abs/1904.01681">augmented neural ordinary differential equation</a>.</p>
+<p>We only need one degree of freedom in order to not collide, so we can do the following. We can add a fake state to the ODE which is zero at every single data point. This then allows this extra dimension to “bump around” as necessary to let the function be a universal approximator. In code this looks like:</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>dudt <span class="op">=</span> <span class="fu">Chain</span>(<span class="op">...</span>) <span class="co"># Flux neural network</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>p,re <span class="op">=</span> Flux.<span class="fu">destructure</span>(dudt)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dudt_</span>(u,p,t) <span class="op">=</span> <span class="fu">re</span>(p)(u)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>prob <span class="op">=</span> <span class="fu">ODEProblem</span>(dudt_,[u0,<span class="fl">0f0</span>],tspan,p)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>augmented_data <span class="op">=</span> <span class="fu">vcat</span>(ode_data,<span class="fu">zeros</span>(<span class="fl">1</span>,<span class="fu">size</span>(ode_data,<span class="fl">2</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="extensions-to-other-differential-equations" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="extensions-to-other-differential-equations"><span class="header-section-number">14.3</span> Extensions to other Differential Equations</h2>
+<p>While our previous lectures focused on ordinary differential equations, the larger classes of differential equations can also have neural networks, for example:</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Stochastic_differential_equation">stochastic differential equations</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Delay_differential_equation">delay differential equations</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Partial_differential_equation">partial differential equations</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Jump_diffusion">jump stochastic differential equations</a></li>
+<li><a href="http://diffeq.sciml.ai/latest/features/callback_functions/">Hybrid differential equations</a> (DEs with event handling)</li>
+</ul>
+<p>For each of these equations, one can come up with an adjoint definition in order to define a backpropagation, or perform direct automatic differentiation of the solver code. One such paper in this area includes <a href="https://arxiv.org/abs/1905.09883">neural stochastic differential equations</a></p>
+<section id="the-universal-ordinary-differential-equation" class="level3" data-number="14.3.1">
+<h3 data-number="14.3.1" class="anchored" data-anchor-id="the-universal-ordinary-differential-equation"><span class="header-section-number">14.3.1</span> The Universal Ordinary Differential Equation</h3>
+<p>This formulation of the neural differential equation in terms of a “knowledge-embedded” structure is leading. If we already knew something about the differential equation, could we use that information in the differential equation definition itself? This leads us to the idea of the <a href="https://arxiv.org/abs/2001.04385">universal differential equation</a>, which is a differential equation that embeds universal approximators in its definition to allow for learning arbitrary functions as pieces of the differential equation.</p>
+<p>The best way to describe this object is to code up an example. As our example, let’s say that we have a two-state system and know that the second state is defined by a linear ODE. This means we want to write:</p>
+<p><span class="math display">\[x' = NN(x,y)\]</span> <span class="math display">\[y' = p_1 x + p_2 y\]</span></p>
+<p>We can code this up as follows:</p>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>u0 <span class="op">=</span> <span class="dt">Float32</span>[<span class="fl">0.8</span>; <span class="fl">0.8</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>tspan <span class="op">=</span> (<span class="fl">0.0f0</span>,<span class="fl">25.0f0</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>ann <span class="op">=</span> <span class="fu">Chain</span>(<span class="fu">Dense</span>(<span class="fl">2</span>,<span class="fl">10</span>,tanh), <span class="fu">Dense</span>(<span class="fl">10</span>,<span class="fl">1</span>))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>p1,re <span class="op">=</span> Flux.<span class="fu">destructure</span>(ann)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>p2 <span class="op">=</span> <span class="dt">Float32</span>[<span class="op">-</span><span class="fl">2.0</span>,<span class="fl">1.1</span>]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>p3 <span class="op">=</span> [p1;p2]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>ps <span class="op">=</span> Flux.<span class="fu">params</span>(p3)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">dudt_</span>(du,u,p,t)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    x, y <span class="op">=</span> u</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    du[<span class="fl">1</span>] <span class="op">=</span> <span class="fu">re</span>(p[<span class="fl">1</span><span class="op">:</span><span class="fl">41</span>])(u)[<span class="fl">1</span>]</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    du[<span class="fl">2</span>] <span class="op">=</span> p[<span class="kw">end</span><span class="op">-</span><span class="fl">1</span>]<span class="op">*</span>y <span class="op">+</span> p[<span class="kw">end</span>]<span class="op">*</span>x</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>prob <span class="op">=</span> <span class="fu">ODEProblem</span>(dudt_,u0,tspan,p3)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">concrete_solve</span>(prob,<span class="fu">Tsit5</span>(),u0,p3,abstol<span class="op">=</span><span class="fl">1e-8</span>,reltol<span class="op">=</span><span class="fl">1e-6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>and we can train the system to be stable at 1 as follows:</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">predict_adjoint</span>()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">Array</span>(<span class="fu">concrete_solve</span>(prob,<span class="fu">Tsit5</span>(),u0,p3,saveat<span class="op">=</span><span class="fl">0.0</span><span class="op">:</span><span class="fl">0.1</span><span class="op">:</span><span class="fl">25.0</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">loss_adjoint</span>() <span class="op">=</span> <span class="fu">sum</span>(abs2,x<span class="op">-</span><span class="fl">1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="fu">predict_adjoint</span>())</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">loss_adjoint</span>()</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> <span class="bu">Iterators</span>.<span class="fu">repeated</span>((), <span class="fl">300</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>opt <span class="op">=</span> <span class="fu">ADAM</span>(<span class="fl">0.01</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>iter <span class="op">=</span> <span class="fl">0</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>cb <span class="op">=</span> <span class="kw">function</span> ()</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> iter <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> iter <span class="op">%</span> <span class="fl">50</span> <span class="op">==</span> <span class="fl">0</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(<span class="fu">loss_adjoint</span>())</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(<span class="fu">plot</span>(<span class="fu">solve</span>(<span class="fu">remake</span>(prob,p<span class="op">=</span>p3,u0<span class="op">=</span>u0),<span class="fu">Tsit5</span>(),saveat<span class="op">=</span><span class="fl">0.1</span>),ylim<span class="op">=</span>(<span class="fl">0</span>,<span class="fl">6</span>)))</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the ODE with the current parameter values.</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cb</span>()</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>Flux.<span class="fu">train!</span>(loss_adjoint, ps, data, opt, cb <span class="op">=</span> cb)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>DiffEqFlux.jl supports the wide gambit of possible universal differential equations with combinations of stiffness, delays, stochasticity, etc. It does so by using Julia’s language-wide AD tooling, such as ReverseDiff.jl, Tracker.jl, ForwardDiff.jl, and Zygote.jl, along with specializations available whenever adjoint methods are known (and the choice between the two is given to the user).</p>
+<p>Many of the methods below can be encapsulated as a choice of a universal differential equation and trained with higher order, adaptive, and more efficient methods with DiffEqFlux.jl.</p>
+</section>
+</section>
+<section id="deep-bsde-methods-for-high-dimensional-partial-differential-equations" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="deep-bsde-methods-for-high-dimensional-partial-differential-equations"><span class="header-section-number">14.4</span> Deep BSDE Methods for High Dimensional Partial Differential Equations</h2>
+<p>The key paper on deep BSDE methods is <a href="https://www.pnas.org/content/115/34/8505">this article from PNAS</a> by Jiequn Han, Arnulf Jentzen, and Weinan E. Follow up papers <a href="https://arxiv.org/pdf/1804.07010.pdf">like this one</a> have identified a larger context in the sense of forward-backwards SDEs for a large class of partial differential equations.</p>
+<section id="understanding-the-setup-for-terminal-pdes" class="level3" data-number="14.4.1">
+<h3 data-number="14.4.1" class="anchored" data-anchor-id="understanding-the-setup-for-terminal-pdes"><span class="header-section-number">14.4.1</span> Understanding the Setup for Terminal PDEs</h3>
+<p>While this setup may seem a bit contrived given the “very specific” partial differential equation form (you know the end value? You have some parabolic form?), it turns out that there is a large class of problems in economics and finance that satisfy this form. The reason is because in these problems you may know the value of something at the end, when you’re going to sell it, and you want to evaluate it right now. The classic example is in options pricing. An option is a contract to be able to solve a stock at a given value. The simplest case is a contract that can only be executed at a pre-determined time in the future. Let’s say we have an option to sell a stock at 100 no matter what. This means that, if the stock at the strike time (the time the option can be sold) is 70, we will make 30 from this option, and thus the option itself is worth 30. The question is, if I have this option today, the strike time is 3 months in the future, and the stock price is currently 70, how much should I value the option <strong>today</strong>?</p>
+<p>To solve this, we need to put a model on how we think the stock price will evolve. One simple version is a linear stochastic differential equation, i.e. the stock price will evolve with a constant interest rate <span class="math inline">\(r\)</span> with some volatility (randomness) <span class="math inline">\(\sigma\)</span>, in which case:</p>
+<p><span class="math display">\[dX_t = r X_t dt + \sigma X_t dW_t.\]</span></p>
+<p>From this model, we can evaluate the probability that the stock is going to be at given values, which then gives us the probability that the option is worth a given value, which then gives us the expected (or average) value of the option. This is the Black-Scholes problem. However, a more direct way of calculating this result is writing down a partial differential equation for the evolution of the value of the option <span class="math inline">\(V\)</span> as a function of time <span class="math inline">\(t\)</span> and the current stock price <span class="math inline">\(x\)</span>. At the final time point, if we know the stock price then we know the value of the option, and thus we have a terminal condition <span class="math inline">\(V(T,x) = g(x)\)</span> for some known value function <span class="math inline">\(g(x)\)</span>. The question is, given this value at time <span class="math inline">\(T\)</span>, what is the value of the option at time <span class="math inline">\(t=0\)</span> given that the stock currently has a value <span class="math inline">\(x = \zeta\)</span>. Why is this interesting? This will tell you what you think the option is currently valued at, and thus if it’s cheaper than that, you can gain money by buying the option right now! This means that the “solution” to the PDE is the value <span class="math inline">\(V(0,\zeta)\)</span>, where we know the final points <span class="math inline">\(V(T,x) = g(x)\)</span>. This is precisely the type of problem that is solved by the deep BSDE method.</p>
+</section>
+<section id="the-deep-bsde-method" class="level3" data-number="14.4.2">
+<h3 data-number="14.4.2" class="anchored" data-anchor-id="the-deep-bsde-method"><span class="header-section-number">14.4.2</span> The Deep BSDE Method</h3>
+<p>Consider the class of semilinear parabolic PDEs, in finite time <span class="math inline">\(t\in[0, T]\)</span> and <span class="math inline">\(d\)</span>-dimensional space <span class="math inline">\(x\in\mathbb R^d\)</span>, that have the form</p>
+<p><span class="math display">\[\begin{align}
+  \frac{\partial u}{\partial t}(t,x)    &amp;+\frac{1}{2}\text{trace}\left(\sigma\sigma^{T}(t,x)\left(\text{Hess}_{x}u\right)(t,x)\right)\\
+    &amp;+\nabla u(t,x)\cdot\mu(t,x) \\
+    &amp;+f\left(t,x,u(t,x),\sigma^{T}(t,x)\nabla u(t,x)\right)=0,\end{align}\]</span></p>
+<p>with a terminal condition <span class="math inline">\(u(T,x)=g(x)\)</span>. In this equation, <span class="math inline">\(\text{trace}\)</span> is the trace of a matrix, <span class="math inline">\(\sigma^T\)</span> is the transpose of <span class="math inline">\(\sigma\)</span>, <span class="math inline">\(\nabla u\)</span> is the gradient of <span class="math inline">\(u\)</span>, and <span class="math inline">\(\text{Hess}_x u\)</span> is the Hessian of <span class="math inline">\(u\)</span> with respect to <span class="math inline">\(x\)</span>. Furthermore, <span class="math inline">\(\mu\)</span> is a vector-valued function, <span class="math inline">\(\sigma\)</span> is a <span class="math inline">\(d \times d\)</span> matrix-valued function and <span class="math inline">\(f\)</span> is a nonlinear function. We assume that <span class="math inline">\(\mu\)</span>, <span class="math inline">\(\sigma\)</span>, and <span class="math inline">\(f\)</span> are known. We wish to find the solution at initial time, <span class="math inline">\(t=0\)</span>, at some starting point, <span class="math inline">\(x = \zeta\)</span>.</p>
+<p>Let <span class="math inline">\(W_{t}\)</span> be a Brownian motion and take <span class="math inline">\(X_t\)</span> to be the solution to the stochastic differential equation</p>
+<p><span class="math display">\[dX_t = \mu(t,X_t) dt + \sigma (t,X_t) dW_t\]</span></p>
+<p>with initial condition <span class="math inline">\(X(0)=\zeta\)</span>. Previous work has shown that the solution satisfies the following BSDE:</p>
+<p><span class="math display">\[\begin{align}
+u(t, &amp;X_t) - u(0,\zeta) = \\
+&amp; -\int_0^t f(s,X_s,u(s,X_s),\sigma^T(s,X_s)\nabla u(s,X_s)) ds \\
+&amp; + \int_0^t \left[\nabla u(s,X_s) \right]^T \sigma (s,X_s) dW_s,\end{align}\]</span></p>
+<p>with terminating condition <span class="math inline">\(g(X_T) = u(X_T,W_T)\)</span>.</p>
+<p>At this point, the authors approximate <span class="math inline">\(\left[\nabla u(s,X_s) \right]^T \sigma (s,X_s)\)</span> and <span class="math inline">\(u(0,\zeta)\)</span> as neural networks. Using the Euler-Maruyama discretization of the stochastic differential equation system, one arrives at a recurrent neural network:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://user-images.githubusercontent.com/1814174/69241180-357d5080-0b6c-11ea-926d-6e27d0a1b26b.PNG" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Deep BSDE</figcaption>
+</figure>
+</div>
+</section>
+<section id="julia-implementation" class="level3" data-number="14.4.3">
+<h3 data-number="14.4.3" class="anchored" data-anchor-id="julia-implementation"><span class="header-section-number">14.4.3</span> Julia Implementation</h3>
+<p>A Julia implementation for the deep BSDE method can be found at <a href="https://github.com/SciML/NeuralPDE.jl">NeuralPDE.jl</a>. The examples considered below are part of the <a href="https://github.com/SciML/NeuralPDE.jl/blob/master/test/NNPDEHan_tests.jl">standard test suite</a>.</p>
+</section>
+<section id="financial-applications-of-deep-bsdes-nonlinear-black-scholes" class="level3" data-number="14.4.4">
+<h3 data-number="14.4.4" class="anchored" data-anchor-id="financial-applications-of-deep-bsdes-nonlinear-black-scholes"><span class="header-section-number">14.4.4</span> Financial Applications of Deep BSDEs: Nonlinear Black-Scholes</h3>
+<p>Now let’s look at a few applications which have PDEs that are solved by this method. One set of problems that are solved, given our setup, are Black-Scholes types of equations. Unlike a lot of previous literature, this works for a wide class of nonlinear extensions to Black-Scholes with large portfolios. Here, the dimension of the PDE for <span class="math inline">\(V(t,x)\)</span> is the dimension of <span class="math inline">\(x\)</span>, where the dimension is the number of stocks in the portfolio that we want to consider. If we want to track 1000 stocks, this means our PDE is 1000 dimensional! Traditional PDE solvers would need around <span class="math inline">\(N^{1000}\)</span> points evolving over time in order to arrive at the solution, which is completely impractical.</p>
+<p>One example of a nonlinear Black-Scholes equation in this form is the Black-Scholes equation with default risk. Here we are adding to the standard model the idea that the companies that we are buying stocks for can default, and thus our valuation has to take into account this default probability as the option will thus become value-less. The PDE that is arrived at is:</p>
+<p><span class="math display">\[\frac{\partial u}{\partial t}(t,x) + \bar{\mu}\cdot \nabla u(t, x) + \frac{\bar{\sigma}^{2}}{2} \sum_{i=1}^{d} \left |x_{i}  \right |^{2} \frac{\partial^2 u}{\partial {x_{i}}^2}(t,x) \\ - (1 -\delta )Q(u(t,x))u(t,x) - Ru(t,x) = 0\]</span></p>
+<p>with terminating condition <span class="math inline">\(g(x) = \min_{i} x_i\)</span> for <span class="math inline">\(x = (x_{1}, . . . , x_{100}) \in R^{100}\)</span>, where <span class="math inline">\(\delta \in [0, 1)\)</span>, <span class="math inline">\(R\)</span> is the interest rate of the risk-free asset, and Q is a piecewise linear function of the current value with three regions <span class="math inline">\((v^{h} &lt; v ^{l}, \gamma^{h} &gt; \gamma^{l})\)</span>,</p>
+<p><span class="math display">\[\begin{align}
+Q(y) &amp;= \mathbb{1}_{(-\infty,\upsilon^{h})}(y)\gamma ^{h}
++ \mathbb{1}_{[\upsilon^{l},\infty)}(y)\gamma ^{l}
+\\ &amp;+ \mathbb{1}_{[\upsilon^{h},\upsilon^{l}]}(y)
+\left[ \frac{(\gamma ^{h} - \gamma ^{l})}{(\upsilon ^{h}- \upsilon ^{l})}
+(y - \upsilon ^{h}) + \gamma ^{h}  \right  ].
+\end{align}\]</span></p>
+<p>This PDE can be cast into the form of the deep BSDE method by setting:</p>
+<p><span class="math display">\[\begin{align}
+    \mu &amp;= \overline{\mu} X_{t} \\
+    \sigma &amp;= \overline{\sigma} \text{diag}(X_{t}) \\
+    f &amp;= -(1 -\delta )Q(u(t,x))u(t,x) - R u(t,x)
+\end{align}\]</span></p>
+<p>The Julia code for this exact problem in 100 dimensions can be found <a href="https://github.com/JuliaDiffEq/NeuralNetDiffEq.jl/blob/79225699412bee6590af0a365d6ae2393a1c1af8/test/NNPDEHan_tests.jl#L213-L270">here</a></p>
+</section>
+<section id="stochastic-optimal-control-as-a-deep-bsde-application" class="level3" data-number="14.4.5">
+<h3 data-number="14.4.5" class="anchored" data-anchor-id="stochastic-optimal-control-as-a-deep-bsde-application"><span class="header-section-number">14.4.5</span> Stochastic Optimal Control as a Deep BSDE Application</h3>
+<p>Another type of problem that fits into this terminal PDE form is the <em>stochastic optimal control problem</em>. The problem is a generalized context to what motivated us before. In this case, there are a set of agents which undergo some known stochastic model. What we want to do is apply some control (push them in some direction) at every single timepoint towards some goal. For example, we have the physics for the dynamics of drone flight, but there’s randomness in the wind condition, and so we want to control the engine speeds to move in a certain direction. However, there is a cost associated with controlling, and thus the question is how to best balance the use of controls with the natural stochastic evolution.</p>
+<p>It turns out this is in the same form as the Black-Scholes problem. There is a model evolving forwards, and when we get to the end we know how much everything “cost” because we know if the drone got to the right location and how much energy it took. So in the same sense as Black-Scholes, we can know the value at the end and try and propagate it backwards given the current state of the system <span class="math inline">\(x\)</span>, to find out <span class="math inline">\(u(0,\zeta)\)</span>, i.e.&nbsp;how should we control right now given the current system is in the state <span class="math inline">\(x = \zeta\)</span>. It turns out that the solution of <span class="math inline">\(u(t,x)\)</span> where <span class="math inline">\(u(T,x)=g(x)\)</span> and we want to find <span class="math inline">\(u(0,\zeta)\)</span> is given by a partial differential equation which is known as the Hamilton-Jacobi-Bellman equation, which is one of these terminal PDEs that is representable by the deep BSDE method.</p>
+<p>Take the classical linear-quadratic Gaussian (LQG) control problem in 100 dimensions</p>
+<p><span class="math display">\[dX_t = 2\sqrt{\lambda} c_t dt + \sqrt{2} dW_t\]</span></p>
+<p>with <span class="math inline">\(t\in [0,T]\)</span>, <span class="math inline">\(X_0 = x\)</span>, and with a cost function</p>
+<p><span class="math display">\[C(c_t) = \mathbb{E}\left[\int_0^T \Vert c_t \Vert^2 dt + g(X_t) \right]\]</span></p>
+<p>where <span class="math inline">\(X_t\)</span> is the state we wish to control, <span class="math inline">\(\lambda\)</span> is the strength of the control, and <span class="math inline">\(c_t\)</span> is the control process. To minimize the control, the Hamilton–Jacobi–Bellman equation:</p>
+<p><span class="math display">\[\frac{\partial u}{\partial t}(t,x) + \Delta u(t,x) - \lambda \Vert \nabla u(t,x) \Vert^2 = 0\]</span></p>
+<p>has a solution <span class="math inline">\(u(t,x)\)</span> which at <span class="math inline">\(t=0\)</span> represents the optimal cost of starting from <span class="math inline">\(x\)</span>.</p>
+<p>This PDE can be rewritten into the canonical form of the deep BSDE method by setting:</p>
+<p><span class="math display">\[\begin{align}
+    \mu &amp;= 0, \\
+    \sigma &amp;= \overline{\sigma} I, \\
+    f &amp;= -\alpha \left \| \sigma^T(s,X_s)\nabla u(s,X_s)) \right \|^{2},
+\end{align}\]</span></p>
+<p>where <span class="math inline">\(\overline{\sigma} = \sqrt{2}\)</span>, T = 1 and <span class="math inline">\(X_0 = (0,. . . , 0) \in R^{100}\)</span>.</p>
+<p>The Julia code for solving this exact problem in 100 dimensions <a href="https://github.com/JuliaDiffEq/NeuralNetDiffEq.jl/blob/79225699412bee6590af0a365d6ae2393a1c1af8/test/NNPDEHan_tests.jl#L166-L211">can be found here</a></p>
+</section>
+</section>
+<section id="connections-of-reservoir-computing-to-scientific-machine-learning" class="level2" data-number="14.5">
+<h2 data-number="14.5" class="anchored" data-anchor-id="connections-of-reservoir-computing-to-scientific-machine-learning"><span class="header-section-number">14.5</span> Connections of Reservoir Computing to Scientific Machine Learning</h2>
+<p>Reservoir computing techniques are an alternative to the “full” neural network techniques we have previously discussed. However, the process of training neural networks has a few caveats which can cause difficulties in real systems:</p>
+<ol type="1">
+<li>The tangent space diverges exponentially fast when the system is chaotic, meaning that results of both forward and reverse automatic differentiation techniques (and the related adjoints) are divergent on these kinds of systems.</li>
+<li>It is hard for neural networks to represent stiff systems. There are many reasons for this, one being that neural networks <a href="https://arxiv.org/abs/1806.08734">tend to drop high frequency behavior</a>.</li>
+</ol>
+<p>There are ways being investigated to alleviate these issues. For example, <a href="https://www.sciencedirect.com/science/article/pii/S0021999117304783">shadow adjoints</a> can give a non-divergent average sense of a derivative on ergodic chaotic systems, but is significantly more expensive than the traditional adjoint.</p>
+<p>To get around these caveats, some research teams have investigated alternatives which do not require gradient-based optimization. The clear frontrunner in this field is a type of architecture called <a href="http://www.scholarpedia.org/article/Echo_state_network">echo state networks</a>. A simplified formulation of an echo state network essentially fixes a neural network that defines a reservoir, i.e.</p>
+<p><span class="math display">\[x_{n+1} = \sigma(W x_n + W_{fb} y_n)\]</span> <span class="math display">\[y_n = g(W_{out} x_n)\]</span></p>
+<p>where <span class="math inline">\(W\)</span> and <span class="math inline">\(W_{fb}\)</span> are fixed random matrices that are chosen before the training process, <span class="math inline">\(x_n\)</span> is called the reservoir state, and <span class="math inline">\(y_n\)</span> is the output state for the observables. The idea is to find a projection <span class="math inline">\(W_{out}\)</span> from the high dimensional random reservoir <span class="math inline">\(x\)</span> to model the timeseries by <span class="math inline">\(y\)</span>. If the reservoir is a big enough and nonlinear enough random system, there should in theory exist a projection from that random system that matches any potential timeseries. Indeed, one can prove that echo state networks are universal adaptive filters under certain conditions.</p>
+<p>If <span class="math inline">\(g\)</span> is invertible (and in many cases <span class="math inline">\(g\)</span> is taken to be the identity), then one can directly apply the inversion of <span class="math inline">\(g\)</span> to the data. This turns the training of <span class="math inline">\(W_{out}\)</span>, the only non-fixed portion, into a standard least squares regression between the reservoir and the observation series. This is then solved by classical means like SVD factorizations which can be stable in ill-conditioned cases.</p>
+<p>Echo state networks have been shown to <a href="https://arxiv.org/pdf/1906.08829.pdf">accurately reproduce chaotic attractors</a> which are shown to be hard to train RNNs against. A demonstration via <a href="https://github.com/SciML/ReservoirComputing.jl">ReservoirComputing.jl</a> clearly highlights this prediction ability:</p>
+<p><img src="https://user-images.githubusercontent.com/10376688/81470264-42f5c800-91ea-11ea-98a2-a8a8d7d96155.png" class="img-fluid"> <img src="https://user-images.githubusercontent.com/10376688/81470281-5a34b580-91ea-11ea-9eea-d2b266da19f4.png" class="img-fluid"></p>
+<p>However, this methodology still is not tailored to the continuous nature of dynamical systems found in scientific computing. Recent work has extended this methodolgy to allow for a continuous reservoir, i.e.&nbsp;a <a href="https://arxiv.org/abs/2010.04004">continuous-time echo state network</a>. It is shown that using the adaptive points of a stiff ODE integrator gives a non-uniform sampling in time that makes it easier to learn stiff equations from less training points, and demonstrates the ability to learn equations where standard physics-informed neural network (PINN) training techniques fail.</p>
+<p><img src="https://user-images.githubusercontent.com/1814174/102009514-dc97d180-3d05-11eb-9542-bcd8d0f8b3a4.PNG" class="img-fluid"></p>
+<p>This area of research is still far less developed than PINNs and neural differential equations but shows promise to more easily learn highly stiff and chaotic systems which are seemingly out of reach for these other methods.</p>
+</section>
+<section id="automated-equation-discovery-outputting-latex-for-dynamical-systems-from-data" class="level2" data-number="14.6">
+<h2 data-number="14.6" class="anchored" data-anchor-id="automated-equation-discovery-outputting-latex-for-dynamical-systems-from-data"><span class="header-section-number">14.6</span> Automated Equation Discovery: Outputting LaTeX for Dynamical Systems from Data</h2>
+<p><a href="https://www.pnas.org/content/116/45/22445">The SINDy algorithm</a> enables data-driven discovery of governing equations from data. It leverages the fact that most physical systems have only a few relevant terms that define the dynamics, making the governing equations sparse in a high-dimensional nonlinear function space. Given a set of observations</p>
+<p><span class="math display">\[\begin{array}{c}
+\mathbf{X}=\left[\begin{array}{c}
+\mathbf{x}^{T}\left(t_{1}\right) \\
+\mathbf{x}^{T}\left(t_{2}\right) \\
+\vdots \\
+\mathbf{x}^{T}\left(t_{m}\right)
+\end{array}\right]=\left[\begin{array}{cccc}
+x_{1}\left(t_{1}\right) &amp; x_{2}\left(t_{1}\right) &amp; \cdots &amp; x_{n}\left(t_{1}\right) \\
+x_{1}\left(t_{2}\right) &amp; x_{2}\left(t_{2}\right) &amp; \cdots &amp; x_{n}\left(t_{2}\right) \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+x_{1}\left(t_{m}\right) &amp; x_{2}\left(t_{m}\right) &amp; \cdots &amp; x_{n}\left(t_{m}\right)
+\end{array}\right] \\
+\end{array}\]</span></p>
+<p>and a set of derivative observations</p>
+<p><span class="math display">\[\begin{array}{c}
+\dot{\mathbf{X}}=\left[\begin{array}{c}
+\mathbf{x}^{T}\left(t_{1}\right) \\
+\dot{\mathbf{x}}^{T}\left(t_{2}\right) \\
+\vdots \\
+\mathbf{x}^{T}\left(t_{m}\right)
+\end{array}\right]=\left[\begin{array}{cccc}
+\dot{x}_{1}\left(t_{1}\right) &amp; \dot{x}_{2}\left(t_{1}\right) &amp; \cdots &amp; \dot{x}_{n}\left(t_{1}\right) \\
+\dot{x}_{1}\left(t_{2}\right) &amp; \dot{x}_{2}\left(t_{2}\right) &amp; \cdots &amp; \dot{x}_{n}\left(t_{2}\right) \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\dot{x}_{1}\left(t_{m}\right) &amp; \dot{x}_{2}\left(t_{m}\right) &amp; \cdots &amp; \dot{x}_{n}\left(t_{m}\right)
+\end{array}\right]
+\end{array}\]</span></p>
+<p>we can evaluate the observations in a basis <span class="math inline">\(\Theta(X)\)</span>:</p>
+<p><span class="math display">\[\Theta(\mathbf{X})=\left[\begin{array}{llllllll}
+1 &amp; \mathbf{X} &amp; \mathbf{X}^{P_{2}} &amp; \mathbf{X}^{P_{3}} &amp; \cdots &amp; \sin (\mathbf{X}) &amp; \cos (\mathbf{X}) &amp; \cdots
+\end{array}\right]\]</span></p>
+<p>where <span class="math inline">\(X^{P_i}\)</span> stands for all <span class="math inline">\(P_i\)</span>th order polynomial terms. For example,</p>
+<p><span class="math display">\[\mathbf{X}^{P_{2}}=\left[\begin{array}{cccccc}
+x_{1}^{2}\left(t_{1}\right) &amp; x_{1}\left(t_{1}\right) x_{2}\left(t_{1}\right) &amp; \cdots &amp; x_{2}^{2}\left(t_{1}\right) &amp; \cdots &amp; x_{n}^{2}\left(t_{1}\right) \\
+x_{1}^{2}\left(t_{2}\right) &amp; x_{1}\left(t_{2}\right) x_{2}\left(t_{2}\right) &amp; \cdots &amp; x_{2}^{2}\left(t_{2}\right) &amp; \cdots &amp; x_{n}^{2}\left(t_{2}\right) \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots &amp; \ddots &amp; \vdots \\
+x_{1}^{2}\left(t_{m}\right) &amp; x_{1}\left(t_{m}\right) x_{2}\left(t_{m}\right) &amp; \cdots &amp; x_{2}^{2}\left(t_{m}\right) &amp; \cdots &amp; x_{n}^{2}\left(t_{m}\right)
+\end{array}\right]\]</span></p>
+<p>Using these matrices, SINDy finds this sparse basis <span class="math inline">\(\mathbf{\Xi}\)</span> over a given candidate library <span class="math inline">\(\mathbf{\Theta}\)</span> by solving the sparse regression problem <span class="math inline">\(\dot{X} =\mathbf{\Theta}\mathbf{\Xi}\)</span> with <span class="math inline">\(L_1\)</span> regularization, i.e. minimizing the objective function <span class="math inline">\(\left\Vert \mathbf{\dot{X}} - \mathbf{\Theta}\mathbf{\Xi} \right\Vert_2 + \lambda \left\Vert \mathbf{\Xi}\right\Vert_1\)</span>. This method and other variants of SInDy, along with specialized optimizers for the LASSO <span class="math inline">\(L_1\)</span> optimization problem, have been implemented in packages like <a href="https://github.com/SciML/DataDrivenDiffEq.jl">DataDrivenDiffEq.jl</a> and <a href="https://github.com/dynamicslab/pysindy">pysindy</a>. The result of these methods is LaTeX for the missing dynamical system.</p>
+<p>Notice that to use this method, derivative data <span class="math inline">\(\dot{X}\)</span> is required. While in most publications on the subject this information is assumed. To find this, <span class="math inline">\(\dot{X}\)</span> is calculated directly from the time series <span class="math inline">\(X\)</span> by fitting a cubic spline and taking the approximated derivatives at the observation points. However, for this estimation to be stable one needs a fairly dense timeseries for the interpolation. To alleviate this issue, the <a href="https://arxiv.org/abs/2001.04385">universal differential equations work</a> estimates terms of partially described models and then uses the neural network as an oracle for the derivative values to learn from subsets of the dynamical system. This allows for the neural network’s training to smooth out the derivative estimate between points while incorporating extra scientific information.</p>
+<p>Other ways are being investigated for incorporating deep learning into the model discovery process. For example, extensions have been investigated where <a href="https://www.nature.com/articles/s41467-018-07210-0">elements are defined by neural networks representing a basis of the Koopman operator</a>. Additionally, much work is going on in improving the efficiency of the symbolic regression methods themselves, and making the methods <a href="https://royalsocietypublishing.org/doi/full/10.1098/rspa.2020.0279">implicit and parallel</a>.</p>
+</section>
+<section id="surrogate-acceleration-methods" class="level2" data-number="14.7">
+<h2 data-number="14.7" class="anchored" data-anchor-id="surrogate-acceleration-methods"><span class="header-section-number">14.7</span> Surrogate Acceleration Methods</h2>
+<p>Another approach for mixing neural networks with differential equations is as a surrogate method. These methods are more mathematically trivial than the previous ideas, but can still achieve interesting results. A full example is explained <a href="https://youtu.be/FGfx8CQHdQA?t=925">in this video</a>.</p>
+<p>Say we have some function <span class="math inline">\(g(p)\)</span> which depends on a solution to a differential equation <span class="math inline">\(u(t;p)\)</span> and choices of parameters <span class="math inline">\(p\)</span>. Computationally how we evaluate this function is we do the following:</p>
+<ul>
+<li>Solve the differential equation with parameters <span class="math inline">\(p\)</span></li>
+<li>Evaluate <span class="math inline">\(g\)</span> on the numerical solution for <span class="math inline">\(u\)</span></li>
+</ul>
+<p>However, this process is computationally expensive since it requires the numerical solution of <span class="math inline">\(u\)</span> for every evaluation. Thus, one can look at this setup and see <span class="math inline">\(g(p)\)</span> itself is a nonlinear function. The idea is to train a neural network to be the function <span class="math inline">\(g(p)\)</span>, i.e.&nbsp;directly put in <span class="math inline">\(p\)</span> and return the appropriate value without ever solving the differential equation.</p>
+<p>The video highlights an important fact about this method: it can be computationally expensive to train this kind of surrogate since many data points <span class="math inline">\((p,g(p))\)</span> are required. In fact, many more data points than you might use. However, after training, the surrogate network for <span class="math inline">\(g(p)\)</span> can be a lot faster than the original simulation-based approach. This means that this is a method for accelerating real-time solutions by doing upfront computations. The total compute time will always be more, but in some sense the cost is amortized or shifted to be done before hand, so that the model does not need to be simulated on the fly. This can allow for things like computationally expensive models of drone flight to be used in a real-time controller.</p>
+<p>This technique goes a long way back, but some recent examples of this have been shown. For example, there’s <a href="https://arxiv.org/abs/1910.07291">this paper which “accelerated” the solution of the 3-body problem</a> using a neural network surrogate trained over a few days to get a 1 million times acceleration (after generating many points beforehand of course! In the paper, notice that it took 10 days to generate the training dataset). Additionally, there is this <a href="https://fluxml.ai/2019/03/05/dp-vs-rl.html">deep learning trebuchet example</a> which showcased that inverse problems, i.e.&nbsp;control or finding parameters, can be completely encapsulated as a <span class="math inline">\(g(p)\)</span> and learned with sufficient data.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./pdes_and_convolutions.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PDEs, Convolutions, and the Mathematics of Locality</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./probabilistic_programming.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">From Optimization to Probabilistic Programming</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>MIT Parallel Computing and Scientific Machine Learning - 10&nbsp; Differentiable Programming and Neural Differential Equations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./mpi.html" rel="next">
+<link href="./estimation_identification.html" rel="prev">
+<link href="./sciml-book-logo.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./automatic_differentiation.html">Modern Approaches</a></li><li class="breadcrumb-item"><a href="./adjoints.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Differentiable Programming and Neural Differential Equations</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="./sciml-book-logo.svg" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">MIT Parallel Computing and Scientific Machine Learning</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="https://github.com/jvaverka/SciMLBook" rel="" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Download" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download"><i class="bi bi-download"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.pdf">
+              <i class="bi bi-bi-file-pdf pe-1"></i>
+            Download PDF
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.epub">
+              <i class="bi bi-bi-journal pe-1"></i>
+            Download ePub
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction to Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimize.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Optimizing Serial Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sciml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction to Scientific Machine Learning through Physics-Informed Neural Networks</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dynamical_systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How Loops Work, An Introduction to Discrete Dynamics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./parallelism_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">The Basics of Single Node Parallel Computing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./styles_of_parallelism.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Different Flavors of Parallelism</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./discretizing_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Ordinary Differential Equations, Applications and Discretizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Modern Approaches</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./automatic_differentiation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Forward-Mode Automatic Differentiation (AD) via High Dimensional Algebras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./stiff_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Solving Stiff Ordinary Differential Equations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation_identification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Basic Parameter Estimation, Reverse-Mode AD, and Inverse Problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./adjoints.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Differentiable Programming and Neural Differential Equations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Modern Architectures</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mpi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Introduction to MPI.jl</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gpus.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">GPU programming</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Advanced Differential Equations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pdes_and_convolutions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PDEs, Convolutions, and the Mathematics of Locality</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./diffeq_machine_learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Mixing Differential Equations and Neural Networks for Physics-Informed Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic_programming.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">From Optimization to Probabilistic Programming</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./global_sensitivity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Global Sensitivity Analysis</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Advanced Topics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./profiling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Code Profiling and Optimization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./uncertainty.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Uncertainty Programming, Generalized Uncertainty Quantification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#youtube-video-link" id="toc-youtube-video-link" class="nav-link active" data-scroll-target="#youtube-video-link"><span class="header-section-number">10.1</span> Youtube Video Link</a></li>
+  <li><a href="#implementation-of-reverse-mode-ad" id="toc-implementation-of-reverse-mode-ad" class="nav-link" data-scroll-target="#implementation-of-reverse-mode-ad"><span class="header-section-number">10.2</span> Implementation of Reverse-Mode AD</a>
+  <ul class="collapse">
+  <li><a href="#static-graph-ad" id="toc-static-graph-ad" class="nav-link" data-scroll-target="#static-graph-ad"><span class="header-section-number">10.2.1</span> Static Graph AD</a></li>
+  <li><a href="#tracing-based-ad-and-wengert-lists" id="toc-tracing-based-ad-and-wengert-lists" class="nav-link" data-scroll-target="#tracing-based-ad-and-wengert-lists"><span class="header-section-number">10.2.2</span> Tracing-Based AD and Wengert Lists</a></li>
+  <li><a href="#source-to-source-ad" id="toc-source-to-source-ad" class="nav-link" data-scroll-target="#source-to-source-ad"><span class="header-section-number">10.2.3</span> Source-to-Source AD</a></li>
+  </ul></li>
+  <li><a href="#derivation-of-reverse-mode-rules-adjoints-and-implicit-function-theorem" id="toc-derivation-of-reverse-mode-rules-adjoints-and-implicit-function-theorem" class="nav-link" data-scroll-target="#derivation-of-reverse-mode-rules-adjoints-and-implicit-function-theorem"><span class="header-section-number">10.3</span> Derivation of Reverse Mode Rules: Adjoints and Implicit Function Theorem</a>
+  <ul class="collapse">
+  <li><a href="#adjoint-of-linear-solve" id="toc-adjoint-of-linear-solve" class="nav-link" data-scroll-target="#adjoint-of-linear-solve"><span class="header-section-number">10.3.1</span> Adjoint of Linear Solve</a></li>
+  <li><a href="#adjoint-of-nonlinear-solve" id="toc-adjoint-of-nonlinear-solve" class="nav-link" data-scroll-target="#adjoint-of-nonlinear-solve"><span class="header-section-number">10.3.2</span> Adjoint of Nonlinear Solve</a></li>
+  <li><a href="#adjoint-of-ordinary-differential-equations" id="toc-adjoint-of-ordinary-differential-equations" class="nav-link" data-scroll-target="#adjoint-of-ordinary-differential-equations"><span class="header-section-number">10.3.3</span> Adjoint of Ordinary Differential Equations</a></li>
+  <li><a href="#complexities-of-implementing-ode-adjoints" id="toc-complexities-of-implementing-ode-adjoints" class="nav-link" data-scroll-target="#complexities-of-implementing-ode-adjoints"><span class="header-section-number">10.3.4</span> Complexities of Implementing ODE Adjoints</a></li>
+  <li><a href="#the-vjp-and-neural-ordinary-differential-equations" id="toc-the-vjp-and-neural-ordinary-differential-equations" class="nav-link" data-scroll-target="#the-vjp-and-neural-ordinary-differential-equations"><span class="header-section-number">10.3.5</span> The vjp and Neural Ordinary Differential Equations</a></li>
+  </ul></li>
+  <li><a href="#alternative-training-strategies" id="toc-alternative-training-strategies" class="nav-link" data-scroll-target="#alternative-training-strategies"><span class="header-section-number">10.4</span> Alternative “Training” Strategies</a>
+  <ul class="collapse">
+  <li><a href="#multiple-shooting-techniques" id="toc-multiple-shooting-techniques" class="nav-link" data-scroll-target="#multiple-shooting-techniques"><span class="header-section-number">10.4.1</span> Multiple Shooting Techniques</a></li>
+  <li><a href="#collocation-methods" id="toc-collocation-methods" class="nav-link" data-scroll-target="#collocation-methods"><span class="header-section-number">10.4.2</span> Collocation Methods</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jvaverka/SciMLBook/edit/main/adjoints.qmd" class="toc-action">Edit this page</a></p><p><a href="https://github.com/jvaverka/SciMLBook/issues/new" class="toc-action">Report an issue</a></p><p><a href="https://github.com/jvaverka/SciMLBook/blob/main/adjoints.qmd" class="toc-action">View source</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Differentiable Programming and Neural Differential Equations</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="youtube-video-link" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="youtube-video-link"><span class="header-section-number">10.1</span> <a href="https://youtu.be/fXcekZZP-1A">Youtube Video Link</a></h2>
+<p>Our last discussion focused on how, at a high mathematical level, one could in theory build programs which compute gradients in a fast manner by looking at the computational graph and performing reverse-mode automatic differentiation. Within the context of parameter identification, we saw many advantages to this approach because it did not scale multiplicatively in the number of parameters, and thus it is an efficient way to calculate Jacobians of objects where there are less rows than columns (think of the gradient as 1 row).</p>
+<p>More precisely, this is seen to be more about sparsity patterns, with reverse-mode as being more efficient if there are “enough” less row seeds required than column partials (with mixed mode approaches sometimes being much better). However, to make reverse-mode AD realistically usable inside of a programming language instead of a compute graph, we need to do three things:</p>
+<ol type="1">
+<li>We need to have a way of implementing reverse-mode AD on a language.</li>
+<li>We need a systematic way to derive “adjoint” relationships (pullbacks).</li>
+<li>We need to see if there are better ways to fit parameters to data, rather than performing reverse-mode AD through entire programs!</li>
+</ol>
+</section>
+<section id="implementation-of-reverse-mode-ad" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="implementation-of-reverse-mode-ad"><span class="header-section-number">10.2</span> Implementation of Reverse-Mode AD</h2>
+<p>Forward-mode AD was implementable through operator overloading and dual number arithmetic. However, reverse-mode AD requires reversing a program through its computational structure, which is a much more difficult operation. This begs the question, how does one actually build a reverse-mode AD implementation?</p>
+<section id="static-graph-ad" class="level3" data-number="10.2.1">
+<h3 data-number="10.2.1" class="anchored" data-anchor-id="static-graph-ad"><span class="header-section-number">10.2.1</span> Static Graph AD</h3>
+<p>The most obvious solution is to use a static compute graph, since how we defined our differentiation structure was on a compute graph. Tensorflow is a modern example of this approach, where a user must define variables and operations in a graph language (that’s embedded into Python, R, Julia, etc.), and then execution on the graph is easy to differentiate. This has the advantage of being a simplified and controlled form, which means that not only differentiation transformations are possible, but also things like automatic parallelization. However, many see directly writing a (static) computation graph as a barrier for practical use since it requires completely rewriting all existing programs to this structure.</p>
+</section>
+<section id="tracing-based-ad-and-wengert-lists" class="level3" data-number="10.2.2">
+<h3 data-number="10.2.2" class="anchored" data-anchor-id="tracing-based-ad-and-wengert-lists"><span class="header-section-number">10.2.2</span> Tracing-Based AD and Wengert Lists</h3>
+<p>Recall that an alternative formulation of reverse-mode AD for composed functions</p>
+<p><span class="math display">\[f = f^L \circ f^{L-1} \circ \ldots \circ f^1\]</span></p>
+<p>is through pullbacks on the Jacobians:</p>
+<p><span class="math display">\[v^T J = (\ldots ((v^T J_L) J_{L-1}) \ldots ) J_1\]</span></p>
+<p>Therefore, if one can transform the program structure into a list of composed functions, then reverse-mode AD is the successive application of pullbacks going in the reverse direction:</p>
+<p><span class="math display">\[\mathcal{B}_{f}^{x}(A)=\mathcal{B}_{f^{1}}^{x}\left(\ldots\left(\mathcal{\mathcal{B}}_{f^{L-1}}^{f^{L-2}(f^{L-3}(\ldots f^{1}(x)\ldots))}\left(\mathcal{B}_{f^{L}}^{f^{L-1}(f^{L-2}(\ldots f^{1}(x)\ldots))}(A)\right)\right)\ldots\right)\]</span></p>
+<p>Recall that the pullback <span class="math inline">\(\mathcal{B}_f^x(\overline{y})\)</span> requires knowing:</p>
+<ol type="1">
+<li>The operation being performed</li>
+<li>The value <span class="math inline">\(x\)</span> of the forward pass</li>
+</ol>
+<p>The idea is to then build a <em>Wengert list</em> that is from exactly the forward pass of a specific <span class="math inline">\(x\)</span>, also known as a <em>trace</em>, and thus giving rise to <em>tracing-based reverse-mode AD</em>. This is the basis of many reverse-mode implementations, such as Julia’s Tracker.jl (Flux.jl’s old AD), ReverseDiff.jl, PyTorch, Tensorflow Eager, Autograd, and Autograd.jl. It is widely adopted due to its simplicity in implementation.</p>
+<section id="inspecting-tracker.jl" class="level4" data-number="10.2.2.1">
+<h4 data-number="10.2.2.1" class="anchored" data-anchor-id="inspecting-tracker.jl"><span class="header-section-number">10.2.2.1</span> Inspecting Tracker.jl</h4>
+<p>Tracker.jl is a very simple implementation to inspect. The definition of its number and array types are as follows:</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> Call{F,As<span class="op">&lt;:</span><span class="dt">Tuple</span>}</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  func<span class="op">::</span><span class="dt">F</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  args<span class="op">::</span><span class="dt">As</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">mutable struct</span> Tracked{T}</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  ref<span class="op">::</span><span class="dt">UInt32</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  f<span class="op">::</span><span class="dt">Call</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  isleaf<span class="op">::</span><span class="dt">Bool</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  grad<span class="op">::</span><span class="dt">T</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">Tracked</span><span class="dt">{T}</span>(f<span class="op">::</span><span class="dt">Call</span>) <span class="kw">where</span> T <span class="op">=</span> <span class="fu">new</span>(<span class="fl">0</span>, f, <span class="cn">false</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">Tracked</span><span class="dt">{T}</span>(f<span class="op">::</span><span class="dt">Call</span>, grad<span class="op">::</span><span class="dt">T</span>) <span class="kw">where</span> T <span class="op">=</span> <span class="fu">new</span>(<span class="fl">0</span>, f, <span class="cn">false</span>, grad)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">Tracked</span><span class="dt">{T}</span>(f<span class="op">::</span><span class="dt">Call{Nothing}</span>, grad<span class="op">::</span><span class="dt">T</span>) <span class="kw">where</span> T <span class="op">=</span> <span class="fu">new</span>(<span class="fl">0</span>, f, <span class="cn">true</span>, grad)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">mutable struct</span> TrackedReal{T<span class="op">&lt;:</span><span class="dt">Real</span>} <span class="op">&lt;:</span><span class="dt"> Real</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  data<span class="op">::</span><span class="dt">T</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  tracker<span class="op">::</span><span class="dt">Tracked{T}</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> TrackedArray{T,N,A<span class="op">&lt;:</span><span class="dt">AbstractArray{T,N}</span>} <span class="op">&lt;:</span><span class="dt"> AbstractArray{T,N}</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  tracker<span class="op">::</span><span class="dt">Tracked{A}</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  data<span class="op">::</span><span class="dt">A</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  grad<span class="op">::</span><span class="dt">A</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">TrackedArray</span><span class="dt">{T,N,A}</span>(t<span class="op">::</span><span class="dt">Tracked{A}</span>, data<span class="op">::</span><span class="dt">A</span>) <span class="kw">where</span> {T,N,A} <span class="op">=</span> <span class="fu">new</span>(t, data)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">TrackedArray</span><span class="dt">{T,N,A}</span>(t<span class="op">::</span><span class="dt">Tracked{A}</span>, data<span class="op">::</span><span class="dt">A</span>, grad<span class="op">::</span><span class="dt">A</span>) <span class="kw">where</span> {T,N,A} <span class="op">=</span> <span class="fu">new</span>(t, data, grad)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As expected, it replaces every single number and array with a value that will store not just perform the operation, but also build up a list of operations along with the values at every stage. Then pullback rules are implemented for primitives via the <code>@grad</code> macro. For example, the pullback for the dot product is implemented as:</p>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@grad</span> <span class="fu">dot</span>(xs, ys) <span class="op">=</span> <span class="fu">dot</span>(<span class="fu">data</span>(xs), <span class="fu">data</span>(ys)), Δ <span class="op">-&gt;</span> (Δ <span class="op">.*</span> ys, Δ <span class="op">.*</span> xs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is read as: the value going forward is computed by using the Julia <code>dot</code> function on the arrays, and the pullback embeds the backs of the forward pass and uses <code>Δ .* ys</code> as the derivative with respect to <code>x</code>, and <code>Δ .* xs</code> as the derivative with respect to <code>y</code>. This element-wise nature makes sense given the diagonal-ness of the Jacobian.</p>
+<p>Note that this also allows utilizing intermediates of the forward pass within the reverse pass. This is seen in the definition of the pullback of <code>meanpool</code>:</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@grad</span> <span class="kw">function</span> <span class="fu">meanpool</span>(x, pdims<span class="op">::</span><span class="dt">PoolDims</span>; kw<span class="op">...</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  y <span class="op">=</span> <span class="fu">meanpool</span>(<span class="fu">data</span>(x), pdims; kw<span class="op">...</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  y, Δ <span class="op">-&gt;</span> (<span class="fu">nobacksies</span>(<span class="op">:</span>meanpool, NNlib.<span class="fu">∇meanpool</span>(<span class="fu">data</span>.((Δ, y, x))<span class="op">...</span>, pdims; kw<span class="op">...</span>)), <span class="cn">nothing</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>where the derivative makes use of not only <code>x</code>, but also <code>y</code> so that the <code>meanpool</code> does not need to be re-calculated.</p>
+<p>Using this style, Tracker.jl moves forward, building up the value and closures for the backpass and then recursively pulls back the input <code>Δ</code> to receive the derivatve.</p>
+</section>
+</section>
+<section id="source-to-source-ad" class="level3" data-number="10.2.3">
+<h3 data-number="10.2.3" class="anchored" data-anchor-id="source-to-source-ad"><span class="header-section-number">10.2.3</span> Source-to-Source AD</h3>
+<p>Given our previous discussions on performance, you should be horrified with how this approach handles scalar values. Each <code>TrackedReal</code> holds as <code>Tracked{T}</code> which holds a <code>Call</code>, not a <code>Call{F,As&lt;:Tuple}</code>, and thus it’s not strictly typed. Because it’s not strictly typed, this implies that every single operation is going to cause heap allocations. If you measure this in PyTorch, TensorFlow Eager, Tracker, etc. you get around 500ns-2ms of overhead. This means that a 2ns <code>+</code> operation becomes… &gt;500ns! Oh my!</p>
+<p>This is not the only issue with tracing. Another issue is that the trace is value-dependent, meaning that every new value can build a new trace. Thus one cannot easily JIT compile a trace because it’ll be different for every gradient calculation (you can compile it, but you better make sure the compile times are short!). Lastly, the Wengert list can be much larger than the code itself. For example, if you trace through a loop that is <code>for i in 1:100000</code>, then the trace will be huge, even if the function is relatively simple. This is directly demonstrated in the JAX “how it works” slide:</p>
+<p><img src="https://iaml.it/blog/jax-intro-english/images/lifecycle.png" class="img-fluid"></p>
+<p>To avoid these issues, another version of reverse-mode automatic differentiation is <em>source-to-source</em> transformations. In order to do source code transformations, you need to know how to transform all language constructs via the reverse pass. This can be quite difficult (what is the “adjoint” of <code>lock</code>?), but when worked out this has a few benefits. First of all, you do not have to track values, meaning stack-allocated values can stay on the stack. Additionally, you can JIT compile one backpass because you have a single function used for all backpasses. Lastly, you don’t need to unroll your loops! Instead, which each branch you’d need to insert some data structure to recall the values used from the forward pass (in order to invert in the right directions). However, that can be much more lightweight than a tracking pass.</p>
+<p>This can be a difficult problem to do on a general programming language. In general it needs a strong programmatic representation to use as a compute graph. Google’s engineers did an analysis <a href="https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md">when choosing Swift for TensorFlow</a> and narrowed it down to either Swift or Julia due to their internal graph structures. Thus, it should be no surprise that the modern source-to-source AD systems are Zygote.jl for Julia, and Swift for TensorFlow in Swift. Additionally, older AD systems, like Tampenade, ADIFOR, and TAF, all for Fortran, were source-to-source AD systems.</p>
+</section>
+</section>
+<section id="derivation-of-reverse-mode-rules-adjoints-and-implicit-function-theorem" class="level2" data-number="10.3">
+<h2 data-number="10.3" class="anchored" data-anchor-id="derivation-of-reverse-mode-rules-adjoints-and-implicit-function-theorem"><span class="header-section-number">10.3</span> Derivation of Reverse Mode Rules: Adjoints and Implicit Function Theorem</h2>
+<p>In order to require the least amount of work from our AD system, we need to be able to derive the adjoint rules at the highest level possible. Here are a few well-known cases to start understanding. These next examples are from <a href="https://math.mit.edu/~stevenj/18.336/adjoint.pdf">Steven Johnson’s resource</a>.</p>
+<section id="adjoint-of-linear-solve" class="level3" data-number="10.3.1">
+<h3 data-number="10.3.1" class="anchored" data-anchor-id="adjoint-of-linear-solve"><span class="header-section-number">10.3.1</span> Adjoint of Linear Solve</h3>
+<p>Let’s say we have the function <span class="math inline">\(A(p)x=b(p)\)</span>, i.e.&nbsp;this is the function that is given by the linear solving process, and we want to calculate the gradients of a cost function <span class="math inline">\(g(x,p)\)</span>. To evaluate the gradient directly, we’d calculate:</p>
+<p><span class="math display">\[\frac{dg}{dp} = g_p + g_x x_p\]</span></p>
+<p>where <span class="math inline">\(x_p\)</span> is the derivative of each value of <span class="math inline">\(x\)</span> with respect to each parameter <span class="math inline">\(p\)</span>, and thus it’s an <span class="math inline">\(M \times P\)</span> matrix (a Jacobian). Since <span class="math inline">\(g\)</span> is a small cost function, <span class="math inline">\(g_p\)</span> and <span class="math inline">\(g_x\)</span> are easy to compute, but <span class="math inline">\(x_p\)</span> is given by:</p>
+<p><span class="math display">\[x_{p_i} = A^{-1}(b_{p_i}-A_{p_i}x)\]</span></p>
+<p>and so this is <span class="math inline">\(P\)</span> <span class="math inline">\(M \times M\)</span> linear solves, which is expensive! However, if we multiply by</p>
+<p><span class="math display">\[\lambda^{T} = g_x A^{-1}\]</span></p>
+<p>then we obtain</p>
+<p><span class="math display">\[\frac{dg}{dp}\vert_{f=0} = g_p - \lambda^T f_p = g_p - \lambda^T (A_p x - b_p)\]</span></p>
+<p>which is an alternative formulation of the derivative at the solution value. However, in this case there is no computational benefit to this reformulation.</p>
+</section>
+<section id="adjoint-of-nonlinear-solve" class="level3" data-number="10.3.2">
+<h3 data-number="10.3.2" class="anchored" data-anchor-id="adjoint-of-nonlinear-solve"><span class="header-section-number">10.3.2</span> Adjoint of Nonlinear Solve</h3>
+<p>Now let’s look at some <span class="math inline">\(f(x,p)=0\)</span> nonlinear solving. Differentiating by <span class="math inline">\(p\)</span> gives us:</p>
+<p><span class="math display">\[f_x x_p + f_p = 0\]</span></p>
+<p>and thus <span class="math inline">\(x_p = -f_x^{-1}f_p\)</span>. Therefore, using our cost function we write:</p>
+<p><span class="math display">\[\frac{dg}{dp} = g_p + g_x x_p = g_p - g_x \left(f_x^{-1} f_p \right)\]</span></p>
+<p>or</p>
+<p><span class="math display">\[\frac{dg}{dp} = g_p - \left(g_x f_x^{-1} \right) f_p\]</span></p>
+<p>Since <span class="math inline">\(g_x\)</span> is <span class="math inline">\(1 \times M\)</span>, <span class="math inline">\(f_x^{-1}\)</span> is <span class="math inline">\(M \times M\)</span>, and <span class="math inline">\(f_p\)</span> is <span class="math inline">\(M \times P\)</span>, this grouping changes the problem gets rid of the size <span class="math inline">\(MP\)</span> term.</p>
+<p>As is normal with backpasses, we solve for <span class="math inline">\(x\)</span> through the forward pass however we like, and then for the backpass solve for</p>
+<p><span class="math display">\[f_x^T \lambda = g_x^T\]</span></p>
+<p>to obtain</p>
+<p><span class="math display">\[\frac{dg}{dp}\vert_{f=0} = g_p - \lambda^T f_p\]</span></p>
+<p>which does the calculation without ever building the size <span class="math inline">\(M \times MP\)</span> term.</p>
+</section>
+<section id="adjoint-of-ordinary-differential-equations" class="level3" data-number="10.3.3">
+<h3 data-number="10.3.3" class="anchored" data-anchor-id="adjoint-of-ordinary-differential-equations"><span class="header-section-number">10.3.3</span> Adjoint of Ordinary Differential Equations</h3>
+<p>We with to solve for some cost function <span class="math inline">\(G(u,p)\)</span> evaluated throughout the differential equation, i.e.:</p>
+<p><span class="math display">\[G(u,p) = G(u(p)) = \int_{t_0}^T g(u(t,p))dt\]</span></p>
+<p>To derive this adjoint, introduce the Lagrange multiplier <span class="math inline">\(\lambda\)</span> to form:</p>
+<p><span class="math display">\[I(p) = G(p) - \int_{t_0}^T \lambda^\ast (u^\prime - f(u,p,t))dt\]</span></p>
+<p>Since <span class="math inline">\(u^\prime = f(u,p,t)\)</span>, this is the mathematician’s trick of adding zero, so then we have that</p>
+<p><span class="math display">\[\frac{dG}{dp} = \frac{dI}{dp} = \int_{t_0}^T (g_p + g_u s)dt - \int_{t_0}^T \lambda^\ast (s^\prime - f_u s - f_p)dt\]</span></p>
+<p>for <span class="math inline">\(s\)</span> being the sensitivity, <span class="math inline">\(s = \frac{du}{dp}\)</span>. After applying integration by parts to <span class="math inline">\(\lambda^\ast s^\prime\)</span>, we get that:</p>
+<p><span class="math display">\[\int_{t_{0}}^{T}\lambda^{\ast}\left(s^{\prime}-f_{u}s-f_{p}\right)dt  =\int_{t_{0}}^{T}\lambda^{\ast}s^{\prime}dt-\int_{t_{0}}^{T}\lambda^{\ast}\left(f_{u}s-f_{p}\right)dt\]</span> <span class="math display">\[=|\lambda^{\ast}(t)s(t)|_{t_{0}}^{T}-\int_{t_{0}}^{T}\lambda^{\ast\prime}sdt-\int_{t_{0}}^{T}\lambda^{\ast}\left(f_{u}s-f_{p}\right)dt\]</span></p>
+<p>To see where we ended up, let’s re-arrange the full expression now:</p>
+<p><span class="math display">\[\frac{dG}{dp} =\int_{t_{0}}^{T}(g_{p}+g_{u}s)dt+|\lambda^{\ast}(t)s(t)|_{t_{0}}^{T}-\int_{t_{0}}^{T}\lambda^{\ast\prime}sdt-\int_{t_{0}}^{T}\lambda^{\ast}\left(f_{u}s-f_{p}\right)dt\]</span> <span class="math display">\[=\int_{t_{0}}^{T}(g_{p}+\lambda^{\ast}f_{p})dt+|\lambda^{\ast}(t)s(t)|_{t_{0}}^{T}-\int_{t_{0}}^{T}\left(\lambda^{\ast\prime}+\lambda^\ast f_{u}-g_{u}\right)sdt\]</span></p>
+<p>That was just a re-arrangement. Now, let’s require that</p>
+<p><span class="math display">\[\lambda^\prime = -\frac{df}{du}^\ast \lambda + \left(\frac{dg}{du} \right)^\ast\]</span> <span class="math display">\[\lambda(T) = 0\]</span></p>
+<p>This means that the boundary term of the integration by parts is zero, and also one of those integral terms are perfectly zero. Thus, if <span class="math inline">\(\lambda\)</span> satisfies that equation, then we get:</p>
+<p><span class="math display">\[\frac{dG}{dp} = \lambda^\ast(t_0)\frac{dG}{du}(t_0) + \int_{t_0}^T \left(g_p + \lambda^\ast f_p \right)dt\]</span></p>
+<p>which gives us our adjoint derivative relation.</p>
+<p>If <span class="math inline">\(G\)</span> is discrete, then it can be represented via the Dirac delta:</p>
+<p><span class="math display">\[G(u,p) = \int_{t_0}^T \sum_{i=1}^N \Vert d_i - u(t_i,p)\Vert^2 \delta(t_i - t)dt\]</span></p>
+<p>in which case</p>
+<p><span class="math display">\[g_u(t_i) = 2(d_i - u(t_i,p))\]</span></p>
+<p>at the data points <span class="math inline">\((t_i,d_i)\)</span>. Therefore, the derivative of an ODE solution with respect to a cost function is given by solving for <span class="math inline">\(\lambda^\ast\)</span> using an ODE for <span class="math inline">\(\lambda^T\)</span> in reverse time, and then using that to calculate <span class="math inline">\(\frac{dG}{dp}\)</span>. Note that <span class="math inline">\(\frac{dG}{dp}\)</span> can be calculated simultaneously by appending a single value to the reverse ODE, since we can simply define the new ODE term as <span class="math inline">\(g_p + \lambda^\ast f_p\)</span>, which would then calculate the integral on the fly (ODE integration is just… integration!).</p>
+</section>
+<section id="complexities-of-implementing-ode-adjoints" class="level3" data-number="10.3.4">
+<h3 data-number="10.3.4" class="anchored" data-anchor-id="complexities-of-implementing-ode-adjoints"><span class="header-section-number">10.3.4</span> Complexities of Implementing ODE Adjoints</h3>
+<p>The image below explains the dilemma:</p>
+<p><img src="https://user-images.githubusercontent.com/1814174/66882662-4d741a00-ef99-11e9-9233-4d6804fec2ec.PNG" class="img-fluid"></p>
+<p>Essentially, the whole problem is that we need to solve the ODE</p>
+<p><span class="math display">\[\lambda^\prime = -\frac{df}{du}^\ast \lambda - \left(\frac{dg}{du} \right)^\ast\]</span> <span class="math display">\[\lambda(T) = 0\]</span></p>
+<p>in reverse, but <span class="math inline">\(\frac{df}{du}\)</span> is defined by <span class="math inline">\(u(t)\)</span> which is a value only computed in the forward pass (the forward pass is embedded within the backpass!). Thus we need to be able to retrieve the value of <span class="math inline">\(u(t)\)</span> to get the Jacobian on-demand. There are three ways which this can be done:</p>
+<ol type="1">
+<li>If you solve the reverse ODE <span class="math inline">\(u^\prime = f(u,p,t)\)</span> backwards in time, mathematically it’ll give equivalent values. Computation-wise, this means that you can append <span class="math inline">\(u(t)\)</span> to <span class="math inline">\(\lambda(t)\)</span> (to <span class="math inline">\(\frac{dG}{dp}\)</span>) to calculate all terms at the same time with a single reverse pass ODE. However, numerically this is unstable and thus not always recommended (ODEs are reversible, but ODE solver methods are not necessarily going to generate the same exact values or trajectories in reverse!)</li>
+<li>If you solve the forward ODE and receive a continuous solution <span class="math inline">\(u(t)\)</span>, you can interpolate it to retrieve the values at any given the time reverse pass needs the <span class="math inline">\(\frac{df}{du}\)</span> Jacobian. This is fast but memory-intensive.</li>
+<li>Every time you need a value <span class="math inline">\(u(t)\)</span> during the backpass, you re-solve the forward ODE to <span class="math inline">\(u(t)\)</span>. This is expensive! Thus one can instead use <em>checkpoints</em>, i.e.&nbsp;save at finitely many time points during the forward pass, and use those as starting points for the <span class="math inline">\(u(t)\)</span> calculation.</li>
+</ol>
+<p>Alternative strategies can be investigated, such as an interpolation which stores values in a compressed form.</p>
+</section>
+<section id="the-vjp-and-neural-ordinary-differential-equations" class="level3" data-number="10.3.5">
+<h3 data-number="10.3.5" class="anchored" data-anchor-id="the-vjp-and-neural-ordinary-differential-equations"><span class="header-section-number">10.3.5</span> The vjp and Neural Ordinary Differential Equations</h3>
+<p>It is here that we can note that, if <span class="math inline">\(f\)</span> is a function defined by a neural network, we arrive at the <em>neural ordinary differential equation</em>. This adjoint method is thus the backpropagation method for the neural ODE. However, the backpass</p>
+<p><span class="math display">\[\lambda^\prime = -\frac{df}{du}^\ast \lambda - \left(\frac{dg}{du} \right)^\ast\]</span> <span class="math display">\[\lambda(T) = 0\]</span></p>
+<p>can be improved by noticing <span class="math inline">\(\frac{df}{du}^\ast \lambda\)</span> is a vjp, and thus it can be calculated using <span class="math inline">\(\mathcal{B}_f^{u(t)}(\lambda^\ast)\)</span>, i.e.&nbsp;reverse-mode AD on the function <span class="math inline">\(f\)</span>. If <span class="math inline">\(f\)</span> is a neural network, this means that the reverse ODE is defined through successive backpropagation passes of that neural network. The result is a derivative with respect to the cost function of the parameters defining <span class="math inline">\(f\)</span> (either a model or a neural network), which can then be used to fit the data (“train”).</p>
+</section>
+</section>
+<section id="alternative-training-strategies" class="level2" data-number="10.4">
+<h2 data-number="10.4" class="anchored" data-anchor-id="alternative-training-strategies"><span class="header-section-number">10.4</span> Alternative “Training” Strategies</h2>
+<p>Those are the “brute force” training methods which simply use <span class="math inline">\(u(t,p)\)</span> evaluations to calculate the cost. However, it is worth noting that there are a few better strategies that one can employ in the case of dynamical models.</p>
+<section id="multiple-shooting-techniques" class="level3" data-number="10.4.1">
+<h3 data-number="10.4.1" class="anchored" data-anchor-id="multiple-shooting-techniques"><span class="header-section-number">10.4.1</span> Multiple Shooting Techniques</h3>
+<p>Instead of shooting just from the beginning, one can instead shoot from multiple points in time:</p>
+<p><img src="https://user-images.githubusercontent.com/1814174/66883548-561a1f80-ef9c-11e9-9ce1-0b6b55c950f9.PNG" class="img-fluid"></p>
+<p>Of course, one won’t know what the “initial condition in the future” is, but one can instead make that a parameter. By doing so, each interval can be solved independently, and one can then add to the cost function that the end of one interval must match up with the beginning of the other. This can make the integration more robust, since shooting with incorrect parameters over long time spans can give massive gradients which makes it hard to hone in on the correct values.</p>
+</section>
+<section id="collocation-methods" class="level3" data-number="10.4.2">
+<h3 data-number="10.4.2" class="anchored" data-anchor-id="collocation-methods"><span class="header-section-number">10.4.2</span> Collocation Methods</h3>
+<p>If the data is dense enough, one can fit a curve through the points, such as a spline:</p>
+<p><img src="https://user-images.githubusercontent.com/1814174/66883762-fc662500-ef9c-11e9-91c7-c445e32d120f.PNG" class="img-fluid"></p>
+<p>If that’s the case, one can use the fit spline in order to estimate the derivative at each point. Since the ODE is defined as <span class="math inline">\(u^\prime = f(u,p,t)\)</span>, one then then use the cost function</p>
+<p><span class="math display">\[C(p) = \sum_{i=1}^N \Vert\tilde{u}^{\prime}(t_i) - f(u(t_i),p,t)\Vert\]</span></p>
+<p>where <span class="math inline">\(\tilde{u}^{\prime}(t_i)\)</span> is the estimated derivative at the time point <span class="math inline">\(t_i\)</span>. Then one can fit the parameters to ensure this holds. This method can be extremely fast since the ODE doesn’t ever have to be solved! However, note that this is not able to compensate for error accumulation, and thus early errors are not accounted for in the later parts of the data. This means that the integration won’t necessarily match the data even if this fit is “good” if the data points are too far apart, a property that is not true with fitting. Thus, this is usually done as part of a <em>two-stage method</em>, where the starting stage uses collocation to get initial parameters which is then completed with a shooting method.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./estimation_identification.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Basic Parameter Estimation, Reverse-Mode AD, and Inverse Problems</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./mpi.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Introduction to MPI.jl</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

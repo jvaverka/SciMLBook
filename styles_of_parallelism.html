@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>MIT Parallel Computing and Scientific Machine Learning - 5&nbsp; The Different Flavors of Parallelism</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./discretizing_odes.html" rel="next">
+<link href="./parallelism_overview.html" rel="prev">
+<link href="./sciml-book-logo.svg" rel="icon" type="image/svg+xml">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dynamical_systems.html">Parallel Computing</a></li><li class="breadcrumb-item"><a href="./styles_of_parallelism.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Different Flavors of Parallelism</span></a></li></ol></nav>
+      <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+      </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="./sciml-book-logo.svg" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">MIT Parallel Computing and Scientific Machine Learning</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="https://github.com/jvaverka/SciMLBook" rel="" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Download" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download"><i class="bi bi-download"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.pdf">
+              <i class="bi bi-bi-file-pdf pe-1"></i>
+            Download PDF
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./MIT-Parallel-Computing-and-Scientific-Machine-Learning.epub">
+              <i class="bi bi-bi-journal pe-1"></i>
+            Download ePub
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction to Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimize.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Optimizing Serial Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sciml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction to Scientific Machine Learning through Physics-Informed Neural Networks</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Parallel Computing</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dynamical_systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">How Loops Work, An Introduction to Discrete Dynamics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./parallelism_overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">The Basics of Single Node Parallel Computing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./styles_of_parallelism.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Different Flavors of Parallelism</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./discretizing_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Ordinary Differential Equations, Applications and Discretizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">Modern Approaches</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./automatic_differentiation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Forward-Mode Automatic Differentiation (AD) via High Dimensional Algebras</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./stiff_odes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Solving Stiff Ordinary Differential Equations</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./estimation_identification.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Basic Parameter Estimation, Reverse-Mode AD, and Inverse Problems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./adjoints.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Differentiable Programming and Neural Differential Equations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Modern Architectures</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mpi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Introduction to MPI.jl</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gpus.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">GPU programming</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Advanced Differential Equations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pdes_and_convolutions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PDEs, Convolutions, and the Mathematics of Locality</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./diffeq_machine_learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Mixing Differential Equations and Neural Networks for Physics-Informed Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic_programming.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">From Optimization to Probabilistic Programming</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./global_sensitivity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Global Sensitivity Analysis</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">Advanced Topics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./profiling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Code Profiling and Optimization</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./uncertainty.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Uncertainty Programming, Generalized Uncertainty Quantification</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#youtube-video-link" id="toc-youtube-video-link" class="nav-link active" data-scroll-target="#youtube-video-link"><span class="header-section-number">5.1</span> Youtube Video Link</a></li>
+  <li><a href="#lowest-level-simd" id="toc-lowest-level-simd" class="nav-link" data-scroll-target="#lowest-level-simd"><span class="header-section-number">5.2</span> Lowest Level: SIMD</a>
+  <ul class="collapse">
+  <li><a href="#high-level-idea-of-simd" id="toc-high-level-idea-of-simd" class="nav-link" data-scroll-target="#high-level-idea-of-simd"><span class="header-section-number">5.2.1</span> High Level Idea of SIMD</a></li>
+  <li><a href="#how-to-do-simd" id="toc-how-to-do-simd" class="nav-link" data-scroll-target="#how-to-do-simd"><span class="header-section-number">5.2.2</span> How to do SIMD</a></li>
+  <li><a href="#explicit-simd" id="toc-explicit-simd" class="nav-link" data-scroll-target="#explicit-simd"><span class="header-section-number">5.2.3</span> Explicit SIMD</a></li>
+  <li><a href="#summary-of-simd" id="toc-summary-of-simd" class="nav-link" data-scroll-target="#summary-of-simd"><span class="header-section-number">5.2.4</span> Summary of SIMD</a></li>
+  </ul></li>
+  <li><a href="#next-level-up-multithreading" id="toc-next-level-up-multithreading" class="nav-link" data-scroll-target="#next-level-up-multithreading"><span class="header-section-number">5.3</span> Next Level Up: Multithreading</a>
+  <ul class="collapse">
+  <li><a href="#the-dining-philosophers-problem" id="toc-the-dining-philosophers-problem" class="nav-link" data-scroll-target="#the-dining-philosophers-problem"><span class="header-section-number">5.3.1</span> The Dining Philosophers Problem</a></li>
+  <li><a href="#two-programming-models-loop-level-parallelism-and-task-based-parallelism" id="toc-two-programming-models-loop-level-parallelism-and-task-based-parallelism" class="nav-link" data-scroll-target="#two-programming-models-loop-level-parallelism-and-task-based-parallelism"><span class="header-section-number">5.3.2</span> Two Programming Models: Loop-Level Parallelism and Task-Based Parallelism</a></li>
+  <li><a href="#summary-of-multithreading" id="toc-summary-of-multithreading" class="nav-link" data-scroll-target="#summary-of-multithreading"><span class="header-section-number">5.3.3</span> Summary of Multithreading</a></li>
+  </ul></li>
+  <li><a href="#gpu-computing" id="toc-gpu-computing" class="nav-link" data-scroll-target="#gpu-computing"><span class="header-section-number">5.4</span> GPU Computing</a>
+  <ul class="collapse">
+  <li><a href="#gpu-memory" id="toc-gpu-memory" class="nav-link" data-scroll-target="#gpu-memory"><span class="header-section-number">5.4.1</span> GPU Memory</a></li>
+  <li><a href="#note-on-gpu-hardware" id="toc-note-on-gpu-hardware" class="nav-link" data-scroll-target="#note-on-gpu-hardware"><span class="header-section-number">5.4.2</span> Note on GPU Hardware</a></li>
+  <li><a href="#spmd-kernel-generation-gpu-computing-models" id="toc-spmd-kernel-generation-gpu-computing-models" class="nav-link" data-scroll-target="#spmd-kernel-generation-gpu-computing-models"><span class="header-section-number">5.4.3</span> SPMD Kernel Generation GPU Computing Models</a></li>
+  <li><a href="#array-based-gpu-computing-models" id="toc-array-based-gpu-computing-models" class="nav-link" data-scroll-target="#array-based-gpu-computing-models"><span class="header-section-number">5.4.4</span> Array-Based GPU Computing Models</a></li>
+  <li><a href="#summary-of-gpus" id="toc-summary-of-gpus" class="nav-link" data-scroll-target="#summary-of-gpus"><span class="header-section-number">5.4.5</span> Summary of GPUs</a></li>
+  </ul></li>
+  <li><a href="#xeon-phi-accelerators-and-opencl" id="toc-xeon-phi-accelerators-and-opencl" class="nav-link" data-scroll-target="#xeon-phi-accelerators-and-opencl"><span class="header-section-number">5.5</span> Xeon Phi Accelerators and OpenCL</a></li>
+  <li><a href="#tpu-computing" id="toc-tpu-computing" class="nav-link" data-scroll-target="#tpu-computing"><span class="header-section-number">5.6</span> TPU Computing</a></li>
+  <li><a href="#multiprocessing-distributed-computing" id="toc-multiprocessing-distributed-computing" class="nav-link" data-scroll-target="#multiprocessing-distributed-computing"><span class="header-section-number">5.7</span> Multiprocessing (Distributed Computing)</a>
+  <ul class="collapse">
+  <li><a href="#distributed-tasks-with-explicit-memory-handling-the-master-worker-model" id="toc-distributed-tasks-with-explicit-memory-handling-the-master-worker-model" class="nav-link" data-scroll-target="#distributed-tasks-with-explicit-memory-handling-the-master-worker-model"><span class="header-section-number">5.7.1</span> Distributed Tasks with Explicit Memory Handling: The Master-Worker Model</a></li>
+  <li><a href="#distributed-tasks-with-implicit-memory-handling-distributed-task-based-parallelism" id="toc-distributed-tasks-with-implicit-memory-handling-distributed-task-based-parallelism" class="nav-link" data-scroll-target="#distributed-tasks-with-implicit-memory-handling-distributed-task-based-parallelism"><span class="header-section-number">5.7.2</span> Distributed Tasks with Implicit Memory Handling: Distributed Task-Based Parallelism</a></li>
+  <li><a href="#distributed-array-based-parallelism-sharedarrays-elemental-and-darrays" id="toc-distributed-array-based-parallelism-sharedarrays-elemental-and-darrays" class="nav-link" data-scroll-target="#distributed-array-based-parallelism-sharedarrays-elemental-and-darrays"><span class="header-section-number">5.7.3</span> Distributed Array-Based Parallelism: SharedArrays, Elemental, and DArrays</a></li>
+  <li><a href="#mapreduce-hadoop-and-spark-the-map-reduce-model" id="toc-mapreduce-hadoop-and-spark-the-map-reduce-model" class="nav-link" data-scroll-target="#mapreduce-hadoop-and-spark-the-map-reduce-model"><span class="header-section-number">5.7.4</span> MapReduce, Hadoop, and Spark: The Map-Reduce Model</a></li>
+  <li><a href="#mpi-the-distributed-spmd-model" id="toc-mpi-the-distributed-spmd-model" class="nav-link" data-scroll-target="#mpi-the-distributed-spmd-model"><span class="header-section-number">5.7.5</span> MPI: The Distributed SPMD Model</a></li>
+  <li><a href="#summary-of-multiprocessing" id="toc-summary-of-multiprocessing" class="nav-link" data-scroll-target="#summary-of-multiprocessing"><span class="header-section-number">5.7.6</span> Summary of Multiprocessing</a></li>
+  </ul></li>
+  <li><a href="#the-bait-and-switch-parallelism-is-about-programming-models" id="toc-the-bait-and-switch-parallelism-is-about-programming-models" class="nav-link" data-scroll-target="#the-bait-and-switch-parallelism-is-about-programming-models"><span class="header-section-number">5.8</span> The Bait-and-switch: Parallelism is about Programming Models</a></li>
+  </ul>
+<div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/jvaverka/SciMLBook/edit/main/styles_of_parallelism.qmd" class="toc-action">Edit this page</a></p><p><a href="https://github.com/jvaverka/SciMLBook/issues/new" class="toc-action">Report an issue</a></p><p><a href="https://github.com/jvaverka/SciMLBook/blob/main/styles_of_parallelism.qmd" class="toc-action">View source</a></p></div></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Different Flavors of Parallelism</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="youtube-video-link" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="youtube-video-link"><span class="header-section-number">5.1</span> <a href="https://youtu.be/EP5VWwPIews">Youtube Video Link</a></h2>
+<p>Now that you are aware of the basics of parallel computing, let’s give a high level overview of the differences between different modes of parallelism.</p>
+</section>
+<section id="lowest-level-simd" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="lowest-level-simd"><span class="header-section-number">5.2</span> Lowest Level: SIMD</h2>
+<p>Recall SIMD, the idea that processors can run multiple commands simultaneously on specially structured data. “Single Instruction Multiple Data”. SIMD is parallelism within a single core.</p>
+<section id="high-level-idea-of-simd" class="level3" data-number="5.2.1">
+<h3 data-number="5.2.1" class="anchored" data-anchor-id="high-level-idea-of-simd"><span class="header-section-number">5.2.1</span> High Level Idea of SIMD</h3>
+<p>Calculations can occur in parallel in the processor if there is sufficient structure in the computation.</p>
+</section>
+<section id="how-to-do-simd" class="level3" data-number="5.2.2">
+<h3 data-number="5.2.2" class="anchored" data-anchor-id="how-to-do-simd"><span class="header-section-number">5.2.2</span> How to do SIMD</h3>
+<p>The simplest way to do SIMD is simply to make sure that your values are aligned. If they are, then great, LLVM’s autovectorizer pass has a good chance of automatic vectorization (in the world of computing, “SIMD” is synonymous with vectorization since it is taking specific values and instead computing on small vectors. That is not to be confused with “vectorization” in the sense of Python/R/MATLAB, which is a programming style which prefers using C-defined primitive functions, like broadcast or matrix multiplication).</p>
+<p>You can check for auto-vectorization inside of the LLVM IR by looking for statements like:</p>
+<pre><code>%wide.load24 = load &lt;4 x double&gt;, &lt;4 x double&gt; addrspac(13)* %46, align 8
+; └
+; ┌ @ float.jl:395 within `+'
+%47 = fadd &lt;4 x double&gt; %wide.load, %wide.load24</code></pre>
+<p>which means that 4 additions are happening simultaneously. The amount of vectorization is heavily dependent on your architecture. The ancient form of SIMD, the SSE(2) instructions, required that your data was aligned. Now there’s a bit more leeway, but generally it holds that making your the data you’re trying to SIMD over is aligned. Thus there can be major differences in computing using a <em>struct of array</em> format instead of an <em>arrays of structs</em> format. For example:</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> MyComplex</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  real<span class="op">::</span><span class="dt">Float64</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  imag<span class="op">::</span><span class="dt">Float64</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>arr <span class="op">=</span> [<span class="fu">MyComplex</span>(<span class="fu">rand</span>(),<span class="fu">rand</span>()) for i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">100</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre><code>100-element Vector{MyComplex}:
+ MyComplex(0.5171425799729418, 0.5389833329835383)
+ MyComplex(0.9273852992839166, 0.6711676516426572)
+ MyComplex(0.9188839358734163, 0.69566633863532)
+ MyComplex(0.5149805563839515, 0.34684634193884556)
+ MyComplex(0.5025762934009232, 0.9317528981610566)
+ MyComplex(0.6182965305758257, 0.4714678558437191)
+ MyComplex(0.9637130781038232, 0.35381659885390127)
+ MyComplex(0.05303934651739051, 0.5283571896609601)
+ MyComplex(0.7640379612452078, 0.030918641696845883)
+ MyComplex(0.7879963381227947, 0.877727975786527)
+ MyComplex(0.40923630065090066, 0.2841032996700653)
+ MyComplex(0.5310039504202523, 0.3809548581888238)
+ MyComplex(0.28644668740025714, 0.040403772416303)
+ ⋮
+ MyComplex(0.966889263377449, 0.225967114853175)
+ MyComplex(0.7583992061643928, 0.8376264040502798)
+ MyComplex(0.4950710312486035, 0.38216405552956967)
+ MyComplex(0.5577584208258319, 0.03476798870449893)
+ MyComplex(0.2612858158174869, 0.9293738045669759)
+ MyComplex(0.16877190046116053, 0.6768799829602348)
+ MyComplex(0.610591500686496, 0.1714927381851986)
+ MyComplex(0.025248616089485476, 0.8845033232694497)
+ MyComplex(0.6623917047313289, 0.45970378019654157)
+ MyComplex(0.22731260398681374, 0.38286776865734873)
+ MyComplex(0.01214026543643354, 0.15850002116286088)
+ MyComplex(0.17568792291939672, 0.7317199034423749)</code></pre>
+</div>
+</div>
+<p>is represented in memory as</p>
+<pre><code>[real1,imag1,real2,imag2,...]</code></pre>
+<p>while the struct of array formats are</p>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> MyComplexes</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  real<span class="op">::</span><span class="dt">Vector{Float64}</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  imag<span class="op">::</span><span class="dt">Vector{Float64}</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>arr2 <span class="op">=</span> <span class="fu">MyComplexes</span>(<span class="fu">rand</span>(<span class="fl">100</span>),<span class="fu">rand</span>(<span class="fl">100</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>MyComplexes([0.5240456439259698, 0.7641990890595322, 0.3272012223563314, 0.32665635557581374, 0.6208235049962002, 0.017636574146488226, 0.6754741671723067, 0.6606017902042781, 0.9031998261731529, 0.7511761900676958  …  0.35946892646270157, 0.8366647043642217, 0.80495314181679, 0.17012580793194387, 0.4266440935361443, 0.8248150023004187, 0.7475526145122053, 0.6682331655066719, 0.7488365584042757, 0.6216662994614262], [0.5147671464058595, 0.4030123955856699, 0.8925325487199312, 0.8974490320038392, 0.26696452517979885, 0.15703223245821918, 0.5753006191470085, 0.18369838826811646, 0.1616695840779412, 0.9874418694199811  …  0.9053886752455029, 0.23022308636435107, 0.6651321483834207, 0.6417777842027098, 0.030151577749300107, 0.03298300488010508, 0.58854566946127, 0.7105727582002626, 0.9149637304123415, 0.5216242759285099])</code></pre>
+</div>
+</div>
+<p>Now let’s check what happens when we perform a reduction:</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">InteractiveUtils</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Base</span>.<span class="op">:</span><span class="fu">+</span>(x<span class="op">::</span><span class="dt">MyComplex</span>,y<span class="op">::</span><span class="dt">MyComplex</span>) <span class="op">=</span> <span class="fu">MyComplex</span>(x.real<span class="op">+</span>y.real,x.imag<span class="op">+</span>y.imag)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">Base</span>.<span class="op">:/</span>(x<span class="op">::</span><span class="dt">MyComplex</span>,y<span class="op">::</span><span class="dt">Int</span>) <span class="op">=</span> <span class="fu">MyComplex</span>(x.real<span class="op">/</span>y,x.imag<span class="op">/</span>y)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">average</span>(x<span class="op">::</span><span class="dt">Vector{MyComplex}</span>) <span class="op">=</span> <span class="fu">sum</span>(x)<span class="op">/</span><span class="fu">length</span>(x)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="pp">@code_llvm</span> <span class="fu">average</span>(arr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>;  @ In[5]:4 within `average`
+define </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>void @julia_average_1306([2 x double]* noalias nocapture noundef nonnull sret([2 x double]) align 8 dereferenceable(16) %0, {}* noundef nonnull align 16 dereferenceable(40) %1) #0 {
+top:
+  %2 = alloca [4 x {}*], align 8
+  %3 = alloca &lt;2 x double&gt;, align 16
+  %tmpcast = bitcast &lt;2 x double&gt;* %3 to [2 x double]*
+  %.sub = getelementptr inbounds [4 x {}*], [4 x {}*]* %2, i64 0, i64 0
+; ┌ @ reducedim.jl:994 within `sum`
+; │┌ @ reducedim.jl:994 within `#sum#808`
+; ││┌ @ reducedim.jl:998 within `_sum`
+; │││┌ @ reducedim.jl:998 within `#_sum#810`
+; ││││┌ @ reducedim.jl:999 within `_sum`
+; │││││┌ @ reducedim.jl:999 within `#_sum#811`
+; ││││││┌ @ reducedim.jl:357 within `mapreduce`
+; │││││││┌ @ reducedim.jl:357 within `#mapreduce#801`
+; ││││││││┌ @ reducedim.jl:365 within `_mapreduce_dim`
+; │││││││││┌ @ reduce.jl:424 within `_mapreduce`
+; ││││││││││┌ @ indices.jl:486 within `LinearIndices`
+; │││││││││││┌ @ abstractarray.jl:98 within `axes`
+; ││││││││││││┌ @ array.jl:149 within `size`
+               %4 = bitcast {}* %1 to { i8*, i64, i16, i16, i32 }*
+               %5 = getelementptr inbounds { i8*, i64, i16, i16, i32 }, { i8*, i64, i16, i16, i32 }* %4, i64 0, i32 1
+               %6 = load i64, i64* %5, align 8
+; ││││││││││└└└
+; ││││││││││ @ reduce.jl:426 within `_mapreduce`
+            switch i64 %6, label %L14 [
+    i64 0, label %L8
+    i64 1, label %L12
+  ]
+
+L8:                                               ; preds = %top
+; ││││││││││ @ reduce.jl:427 within `_mapreduce`
+            store {}* inttoptr (i64 140224218384336 to {}*), {}** %.sub, align 8
+            %7 = getelementptr inbounds [4 x {}*], [4 x {}*]* %2, i64 0, i64 1
+            store {}* inttoptr (i64 140224214304000 to {}*), {}** %7, align 8
+            %8 = getelementptr inbounds [4 x {}*], [4 x {}*]* %2, i64 0, i64 2
+            store {}* %1, {}** %8, align 8
+            %9 = getelementptr inbounds [4 x {}*], [4 x {}*]* %2, i64 0, i64 3
+            store {}* inttoptr (i64 140224235746528 to {}*), {}** %9, align 8
+            %10 = call nonnull {}* @ijl_invoke({}* inttoptr (i64 140224233214240 to {}*), {}** nonnull %.sub, i32 4, {}* inttoptr (i64 140224414853696 to {}*))
+            call void @llvm.trap()
+            unreachable
+
+L12:                                              ; preds = %top
+; ││││││││││ @ reduce.jl:429 within `_mapreduce`
+; ││││││││││┌ @ essentials.jl:13 within `getindex`
+             %11 = bitcast {}* %1 to &lt;2 x double&gt;**
+             %12 = load &lt;2 x double&gt;*, &lt;2 x double&gt;** %11, align 8
+             %13 = load &lt;2 x double&gt;, &lt;2 x double&gt;* %12, align 1
+             br label %L46
+
+L14:                                              ; preds = %top
+; ││││││││││└
+; ││││││││││ @ reduce.jl:431 within `_mapreduce`
+; ││││││││││┌ @ int.jl:83 within `&lt;`
+             %14 = icmp ugt i64 %6, 15
+; ││││││││││└
+            br i1 %14, label %L42, label %L16
+
+L16:                                              ; preds = %L14
+; ││││││││││ @ reduce.jl:433 within `_mapreduce`
+; ││││││││││┌ @ essentials.jl:13 within `getindex`
+             %15 = bitcast {}* %1 to [2 x double]**
+             %16 = load [2 x double]*, [2 x double]** %15, align 8
+             %17 = bitcast [2 x double]* %16 to &lt;2 x double&gt;*
+             %18 = load &lt;2 x double&gt;, &lt;2 x double&gt;* %17, align 1
+; ││││││││││└
+; ││││││││││ @ reduce.jl:434 within `_mapreduce`
+; ││││││││││┌ @ essentials.jl:13 within `getindex`
+             %.sroa.028.0..sroa_idx = getelementptr inbounds [2 x double], [2 x double]* %16, i64 1, i64 0
+             %19 = bitcast double* %.sroa.028.0..sroa_idx to &lt;2 x double&gt;*
+             %20 = load &lt;2 x double&gt;, &lt;2 x double&gt;* %19, align 1
+; ││││││││││└
+; ││││││││││ @ reduce.jl:435 within `_mapreduce`
+; ││││││││││┌ @ reduce.jl:24 within `add_sum`
+; │││││││││││┌ @ In[5]:2 within `+` @ float.jl:408
+              %21 = fadd &lt;2 x double&gt; %18, %20
+; ││││││││││└└
+; ││││││││││ @ reduce.jl:436 within `_mapreduce`
+; ││││││││││┌ @ int.jl:83 within `&lt;`
+             %.not6482 = icmp ugt i64 %6, 2
+; ││││││││││└</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+            br i1 %.not6482, label %L33, label %L46
+
+L33:                                              ; preds = %L33, %L16
+            %value_phi285 = phi i64 [ %23, %L33 ], [ 2, %L16 ]
+            %22 = phi &lt;2 x double&gt; [ %26, %L33 ], [ %21, %L16 ]
+; ││││││││││ @ reduce.jl:437 within `_mapreduce`
+; ││││││││││┌ @ int.jl:87 within `+`
+             %23 = add nuw nsw i64 %value_phi285, 1
+; ││││││││││└
+; ││││││││││┌ @ essentials.jl:13 within `getindex`
+             %.sroa.0.0..sroa_idx = getelementptr inbounds [2 x double], [2 x double]* %16, i64 %value_phi285, i64 0
+             %24 = bitcast double* %.sroa.0.0..sroa_idx to &lt;2 x double&gt;*
+             %25 = load &lt;2 x double&gt;, &lt;2 x double&gt;* %24, align 1
+; ││││││││││└
+; ││││││││││ @ reduce.jl:438 within `_mapreduce`
+; ││││││││││┌ @ reduce.jl:24 within `add_sum`
+; │││││││││││┌ @ In[5]:2 within `+` @ float.jl:408
+              %26 = fadd &lt;2 x double&gt; %22, %25
+; ││││││││││└└
+; ││││││││││ @ reduce.jl:436 within `_mapreduce`
+; ││││││││││┌ @ int.jl:83 within `&lt;`
+             %exitcond.not = icmp eq i64 %23, %6
+; ││││││││││└
+            br i1 %exitcond.not, label %L46, label %L33
+
+L42:                                              ; preds = %L14
+; ││││││││││ @ reduce.jl:442 within `_mapreduce`
+; ││││││││││┌ @ reduce.jl:272 within `mapreduce_impl`
+             call void @j_mapreduce_impl_1308([2 x double]* noalias nocapture noundef nonnull sret([2 x double]) %tmpcast, {}* nonnull %1, i64 signext 1, i64 signext %6, i64 signext 1024) #0
+; └└└└└└└└└└└
+  %27 = load &lt;2 x double&gt;, &lt;2 x double&gt;* %3, align 16
+; ┌ @ essentials.jl:10 within `length`
+   %.pre = load i64, i64* %5, align 8
+   br label %L46
+
+L46:                                              ; preds = %L42, %L33, %L16, %L12
+   %28 = phi i64 [ %.pre, %L42 ], [ 1, %L12 ], [ %6, %L16 ], [ %6, %L33 ]
+   %29 = phi &lt;2 x double&gt; [ %27, %L42 ], [ %13, %L12 ], [ %21, %L16 ], [ %26, %L33 ]
+; └
+; ┌ @ In[5]:3 within `/` @ promotion.jl:413
+; │┌ @ promotion.jl:381 within `promote`
+; ││┌ @ promotion.jl:358 within `_promote`
+; │││┌ @ number.jl:7 within `convert`
+; ││││┌ @ float.jl:159 within `Float64`
+       %30 = sitofp i64 %28 to double
+; │└└└└
+; │ @ In[5]:3 within `/` @ promotion.jl:413 @ float.jl:411
+   %31 = insertelement &lt;2 x double&gt; poison, double %30, i64 0
+   %32 = shufflevector &lt;2 x double&gt; %31, &lt;2 x double&gt; poison, &lt;2 x i32&gt; zeroinitializer
+   %33 = fdiv &lt;2 x double&gt; %29, %32
+; └
+  %34 = bitcast [2 x double]* %0 to &lt;2 x double&gt;*
+  store &lt;2 x double&gt; %33, &lt;2 x double&gt;* %34, align 8
+  ret void
+}</code></pre>
+</div>
+</div>
+<p>What this is doing is creating small little vectors and then parallelizing the operations of those vectors by calling specific vector-parallel instructions. Keep this in mind.</p>
+</section>
+<section id="explicit-simd" class="level3" data-number="5.2.3">
+<h3 data-number="5.2.3" class="anchored" data-anchor-id="explicit-simd"><span class="header-section-number">5.2.3</span> Explicit SIMD</h3>
+<p>The following was all a form of <strong>loop-level parallelism</strong> known as loop vectorization. It’s simply easier for compilers to reason at the array level, prove iterates are independent, and automatically generate SIMD code from that. This is not necessary, and compilers can produce SIMD code from non-looping code through a process known as <strong>SLP supervectorization</strong>, but the results are far from optimal and the compiler requires a lot of time to do this calculation, meaning that it’s usually not a pass used by default.</p>
+<p>If you want to pack the vectors yourself, then primitives for doing so from within Julia are available in SIMD.jl. This is for “real” performance warriors. This looks like for example:</p>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">SIMD</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> <span class="fu">Vec</span><span class="dt">{4,Float64}</span>((<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">3</span>,<span class="fl">4</span>))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="pp">@show</span> v<span class="op">+</span>v <span class="co"># basic arithmetic is supported</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="pp">@show</span> <span class="fu">sum</span>(v) <span class="co"># basic reductions are supported</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>v + v = &lt;4 x Float64&gt;[2.0, 4.0, 6.0, 8.0]
+sum(v) = 10.0</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<pre><code>10.0</code></pre>
+</div>
+</div>
+<p>Using this you can pull apart code and force the usage of SIMD vectors. One library which makes great use of this is LoopVectorization.jl. However, one word of “caution”:</p>
+<p><strong>Most performance optimization is not trying to do something really good for performance. Most performance optimization is trying to not do something that is actively bad for performance.</strong></p>
+</section>
+<section id="summary-of-simd" class="level3" data-number="5.2.4">
+<h3 data-number="5.2.4" class="anchored" data-anchor-id="summary-of-simd"><span class="header-section-number">5.2.4</span> Summary of SIMD</h3>
+<ul>
+<li>Communication in SIMD is due to locality: if things are local the processor can automatically setup the operations.</li>
+<li>There’s no real worry about “getting it wrong”: you cannot overwrite pieces from different parts of the arithmetic unit, and if SIMD is unsafe then it just won’t auto-vectorize.</li>
+<li>Suitable for operations measured in ns.</li>
+</ul>
+</section>
+</section>
+<section id="next-level-up-multithreading" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="next-level-up-multithreading"><span class="header-section-number">5.3</span> Next Level Up: Multithreading</h2>
+<p>Last time we briefly went over multithreading and described how every process has multiple threads which share a single heap, and when multiple threads are executed simultaneously we have multithreaded parallelism. Note that you can have multiple threads which aren’t executed simultaneously, like in the case of I/O operations, and this is an example of concurrency without parallelism and is commonly referred to as green threads.</p>
+<p><img src="https://blog-assets.risingstack.com/2017/02/kernel-processes-and-threads-1.png" class="img-fluid"></p>
+<p>Last time we described a simple multithreaded program and noticed that multithreading has an overhead cost of around 50ns-100ns. This is due to the construction of the new stack (among other things) each time a new computational thread is spun up. This means that, unlike SIMD, some thought needs to be put in as to when to perform multithreading: it’s not always a good idea. It needs to be high enough on the cost for this to be counter-balanced.</p>
+<p>One abstraction that was glossed over was the memory access style. Before, we were considering a single heap, or an UMA style:</p>
+<p><img src="https://software.intel.com/sites/default/files/m/2/0/4/e/d/39352-figure-1.jpg" class="img-fluid"></p>
+<p>However, this is the case for all shared memory devices. For example, compute nodes on the HPC tend to be “dual Xeon” or “quad Xeon”, where each Xeon processor is itself a multicore processor. But each processor on its own accesses its own local caches, and thus one has to be aware that this is setup in a NUMA (non-uniform memory access) manner:</p>
+<p><img src="https://software.intel.com/sites/default/files/m/2/d/c/b/2/39353-figure-2.jpg" class="img-fluid"></p>
+<p>where there is a cache that is closer to the processor and a cache that is further away. Care should be taken in this to localize the computation per thread, otherwise a cost associated with the memory sharing will be hit (but all sharing will still be automatic).</p>
+<p>In this sense, interthread communication is naturally done through the heap: if you want other threads to be able to touch a value, then you can simply place it on the heap and then it’ll be available. We saw this last time by how overlapping computations can re-use the same heap-based caches, meaning that care needs to be taken with how one writes into a dynamically-allocated array.</p>
+<p>A simple example that demonstrates this is. First, let’s make sure we have multithreading enabled:</p>
+<div class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Base.Threads</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Threads</span>.<span class="fu">nthreads</span>() <span class="co"># should not be 1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<pre><code>1</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">BenchmarkTools</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>acc <span class="op">=</span> <span class="fl">0</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> acc</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    acc <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>acc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre><code>10000</code></pre>
+</div>
+</div>
+<p>The reason for this behavior is that there is a difference between the reading and the writing step to an array. Here, values are being read while other threads are writing, meaning that they see a lower value than when they are attempting to write into it. The result is that the total summation is lower than the true value because of this clashing. We can prevent this by only allowing one thread to utilize the heap-allocated variable at a time. One abstraction for doing this is <em>atomics</em>:</p>
+<div class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>acc <span class="op">=</span> <span class="fu">Atomic</span><span class="dt">{Int64}</span>(<span class="fl">0</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">atomic_add!</span>(acc, <span class="fl">1</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>acc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>Atomic{Int64}(10000)</code></pre>
+</div>
+</div>
+<p>When an atomic add is being done, all other threads wishing to do the same computation are blocked. This of course can have a massive effect on performance since atomic computations are not parallel.</p>
+<p>Julia also exposes a lower level of heap control in threading using <em>locks</em></p>
+<div class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acc_lock <span class="op">=</span> <span class="fu">Ref</span><span class="dt">{Int64}</span>(<span class="fl">0</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> splock <span class="op">=</span> <span class="fu">SpinLock</span>()</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">f1</span>()</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">lock</span>(splock)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>        acc_lock[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">unlock</span>(splock)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> rsplock <span class="op">=</span> <span class="fu">ReentrantLock</span>()</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">f2</span>()</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">lock</span>(rsplock)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        acc_lock[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">unlock</span>(rsplock)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>acc2 <span class="op">=</span> <span class="fu">Atomic</span><span class="dt">{Int64}</span>(<span class="fl">0</span>)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">g</span>()</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>  <span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">atomic_add!</span>(acc2, <span class="fl">1</span>)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acc_s <span class="op">=</span> <span class="fu">Ref</span><span class="dt">{Int64}</span>(<span class="fl">0</span>)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">h</span>()</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> acc_s</span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10_000</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>      acc_s[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">f1</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  157.285 μs (7 allocations: 640 bytes)</code></pre>
+</div>
+</div>
+<p><code>SpinLock</code> is non-reentrant, i.e.&nbsp;it will block itself if a thread that calls a <code>lock</code> does another <code>lock</code>. Therefore it has to be used with caution (every <code>lock</code> goes with one <code>unlock</code>), but it’s fast. <code>ReentrantLock</code> alleviates those concerns, but trades off a bit of performance:</p>
+<div class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">f2</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  166.921 μs (7 allocations: 640 bytes)</code></pre>
+</div>
+</div>
+<p>But if you can use atomics, they will be faster:</p>
+<div class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">g</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  46.660 μs (7 allocations: 640 bytes)</code></pre>
+</div>
+</div>
+<p>and if your computation is actually serial, then use serial code:</p>
+<div class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">h</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  2.329 ns (0 allocations: 0 bytes)</code></pre>
+</div>
+</div>
+<p>Why is this so fast? Check the code:</p>
+<div class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@code_llvm</span> <span class="fu">h</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>;  @ In[10]:25 within `h`
+define void @julia_h_1791() #0 {
+top:
+  %.promoted = load i64, i64* inttoptr (i64 140224426130176 to i64*), align 256
+;  @ In[10]:27 within `h`
+  %0 = add i64 %.promoted, 10000
+;  @ In[10]:28 within `h`
+; ┌ @ Base.jl within `setproperty!`
+   store i64 %0, i64* inttoptr (i64 140224426130176 to i64*), align 256
+; └
+;  @ In[10]:29 within `h`
+  ret void
+}</code></pre>
+</div>
+</div>
+<p>It just knows to add 10000. So to get a proper timing let’s make the size mutable:</p>
+<div class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> len <span class="op">=</span> <span class="fu">Ref</span><span class="dt">{Int}</span>(<span class="fl">10_000</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">h2</span>()</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> acc_s</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> len</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>len[]</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>      acc_s[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">h2</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  2.393 ns (0 allocations: 0 bytes)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@code_llvm</span> <span class="fu">h2</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>;  @ In[15]:2 within `h2`
+define void @julia_h2_1798() #0 {
+top:
+;  @ In[15]:5 within `h2`
+; ┌ @ refvalue.jl:56 within `getindex`
+; │┌ @ Base.jl:37 within `getproperty`
+    %0 = load i64, i64* inttoptr (i64 140224426639520 to i64*), align 32
+; └└
+; ┌ @ range.jl:5 within `Colon`
+; │┌ @ range.jl:397 within `UnitRange`
+; ││┌ @ range.jl:404 within `unitrange_last`
+     %.inv = icmp sgt i64 %0, 0
+; └└└
+  br i1 %.inv, label %L18.preheader, label %L34
+
+L18.preheader:                                    ; preds = %top
+  %.promoted = load i64, i64* inttoptr (i64 140224426130176 to i64*), align 256
+;  @ In[15]:7 within `h2`
+  %1 = add i64 %.promoted, %0
+;  @ In[15]:6 within `h2`
+; ┌ @ Base.jl within `setproperty!`
+   store i64 %1, i64* inttoptr (i64 140224426130176 to i64*), align 256
+; └
+;  @ In[15]:7 within `h2`
+  br label %L34
+
+L34:                                              ; preds = %L18.preheader, %top
+  ret void
+}</code></pre>
+</div>
+</div>
+<p>It’s still optimizing it!</p>
+<div class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>non_const_len <span class="op">=</span> <span class="fl">10000</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">h3</span>()</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> acc_s</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">global</span> non_const_len</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  len2<span class="op">::</span><span class="dt">Int </span><span class="op">=</span> non_const_len</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>len2</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>      acc_s[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">h3</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  99.019 ns (0 allocations: 0 bytes)</code></pre>
+</div>
+</div>
+<p>Note that what is shown here is a type-declaration. <code>a::T = ...</code> forces <code>a</code> to be of type <code>T</code> throughout the whole function. By giving the compiler this information, I am able to use the non-constant global in a type-stable manner.</p>
+<p>One last thing to note about multithreaded computations, and parallel computations, is that one cannot assume that the parallelized computation is computed in any given order. For example, the following will has a quasi-random ordering:</p>
+<div class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> a2 <span class="op">=</span> <span class="fu">zeros</span>(<span class="fu">nthreads</span>()<span class="op">*</span><span class="fl">10</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> acc_lock2 <span class="op">=</span> <span class="fu">Ref</span><span class="dt">{Int64}</span>(<span class="fl">0</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> splock2 <span class="op">=</span> <span class="fu">SpinLock</span>()</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">f_order</span>()</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@threads</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu">length</span>(a2)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">lock</span>(splock2)</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>        acc_lock2[] <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>        a2[i] <span class="op">=</span> acc_lock2[]</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">unlock</span>(splock2)</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a><span class="fu">f_order</span>()</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>a2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="18">
+<pre><code>10-element Vector{Float64}:
+  1.0
+  2.0
+  3.0
+  4.0
+  5.0
+  6.0
+  7.0
+  8.0
+  9.0
+ 10.0</code></pre>
+</div>
+</div>
+<p>Note that here we can see that Julia 1.5 is dividing up the work into groups of 10 for each thread, and then one thread dominates the computation at a time, but which thread dominates is random.</p>
+<section id="the-dining-philosophers-problem" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1" class="anchored" data-anchor-id="the-dining-philosophers-problem"><span class="header-section-number">5.3.1</span> The Dining Philosophers Problem</h3>
+<p>A classic tale in parallel computing is the dining philosophers problem. In this case, there are N philosophers at a table who all want to eat at the same time, following all of the same rules. Each philosopher must alternatively think and then eat. They need both their left and right fork to start eating, but cannot start eating until they have both forks. The problem is how to setup a concurrent algorithm that will not cause any philosophers to starve.</p>
+<p>The difficulty is a situation known as <em>deadlock</em>. For example, if each philosopher was told to grab the right fork when it’s available, and then the left fork, and put down the fork after eating, then they will all grab the right fork and none will ever eat because they will all be waiting on the left fork. This is analogous to two blocked computations which are waiting on the other to finish. Thus, when using blocking structures, one needs to be careful about deadlock!</p>
+</section>
+<section id="two-programming-models-loop-level-parallelism-and-task-based-parallelism" class="level3" data-number="5.3.2">
+<h3 data-number="5.3.2" class="anchored" data-anchor-id="two-programming-models-loop-level-parallelism-and-task-based-parallelism"><span class="header-section-number">5.3.2</span> Two Programming Models: Loop-Level Parallelism and Task-Based Parallelism</h3>
+<p>As described in the previous lecture, one can also use <code>Threads.@spawn</code> to do multithreading in Julia v1.3+. The same factors all applay: how to do locks and Mutex etc. This is a case of a parallelism construct having two alternative <strong>programming models</strong>. <code>Threads.@spawn</code> represents task-based parallelism, while <code>Threads.@threads</code> represents Loop-Level Parallelism or a parallel iterator model. Loop-based parallelization models are very high level and, assuming every iteration is independent, almost requires no code change. Task-based parallelism is a more expressive parallelism model, but usually requires modifying the code to be explicitly written as a set of parallelizable tasks. Note that in the case of Julia, <code>Threads.@threads</code> is implemented using <code>Threads.@spawn</code>’s model.</p>
+</section>
+<section id="summary-of-multithreading" class="level3" data-number="5.3.3">
+<h3 data-number="5.3.3" class="anchored" data-anchor-id="summary-of-multithreading"><span class="header-section-number">5.3.3</span> Summary of Multithreading</h3>
+<ul>
+<li>Communication in multithreading is done on the heap. Locks and atomics allow for a form of safe message passing.</li>
+<li>50ns-100ns of overhead. Suitable for 1μs calculations.</li>
+<li>Be careful of ordering and heap-allocated values.</li>
+</ul>
+</section>
+</section>
+<section id="gpu-computing" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="gpu-computing"><span class="header-section-number">5.4</span> GPU Computing</h2>
+<p>GPUs are not fast. In fact, the problem with GPUs is that each processor is slow. However, GPUs have a lot of cores… like thousands.</p>
+<p><img src="https://miro.medium.com/max/832/0*xzPjWMqXC0NB6D69.jpg" class="img-fluid"></p>
+<p>An RTX2080, a standard “gaming” GPU (not even the ones in the cluster), has 2944 cores. However, not only are GPUs slow, but they also need to be programmed in a style that is <em>SPMD</em>, which standard for Single Program Multiple Data. This means that every single thread must be running the same program but on different pieces of data. Exactly the same program. If you have</p>
+<div class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> a <span class="op">&gt;</span> <span class="fl">1</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Do something</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Do something else</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>where some of the data goes on one branch and other data goes on the other branch, every single thread will run both branches (performing “fake” computations while on the other branch). This means that GPU tasks should be “very parallel” with as few conditionals as possible.</p>
+<section id="gpu-memory" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="gpu-memory"><span class="header-section-number">5.4.1</span> GPU Memory</h3>
+<p>GPUs themselves are shared memory devices, meaning they have a heap that is shared amongst all threads. However, GPUs are heavily in the NUMA camp, where different blocks of the GPU have much faster access to certain parts of the memory. Additionally, this heap is disconnected from the standard processor, so data must be passed to the GPU and data must be returned.</p>
+<p>GPU memory size is relatively small compared to CPUs. Example: the RTX2080Ti has 8GB of RAM. Thus one needs to be doing computations that are memory compact (such as matrix multiplications, which are O(n^3) making the computation time scale quicker than the memory cost).</p>
+</section>
+<section id="note-on-gpu-hardware" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="note-on-gpu-hardware"><span class="header-section-number">5.4.2</span> Note on GPU Hardware</h3>
+<p>Standard GPU hardware “for gaming”, like RTX2070, is just as fast as higher end GPU hardware for Float32. Higher end hardware, like the Tesla, add more memory, memory safety, and Float64 support. However, these require being in a server since they have alternative cooling strategies, making them a higher end product.</p>
+</section>
+<section id="spmd-kernel-generation-gpu-computing-models" class="level3" data-number="5.4.3">
+<h3 data-number="5.4.3" class="anchored" data-anchor-id="spmd-kernel-generation-gpu-computing-models"><span class="header-section-number">5.4.3</span> SPMD Kernel Generation GPU Computing Models</h3>
+<p>The core programming models for GPU computing are SPMD kernel compilers, of which the most well-known is CUDA. CUDA is a C++-like programming language which compiles to .ptx kernels, and GPU execution on NVIDIA GPUs is done by “all steams” of a GPU doing concurrent execution of the kernel (generally, without going into more details, you can of “all streams” as just meaning “all cores”. More detailed views of GPU execution will come later).</p>
+<p>.ptx CUDA kernels can be compiled from LLVM IR, and thus since Julia is a programming language which emits LLVM IR for all of its operations, native Julia programs are compatible with compilation to CUDA. The helper functions to enable this separate compilation path is CUDA.jl. Let’s take a look at a basic CUDA.jl kernel generating example:</p>
+<div class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CUDA</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="fl">2</span><span class="op">^</span><span class="fl">20</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>x_d <span class="op">=</span> CUDA.<span class="fu">fill</span>(<span class="fl">1.0f0</span>, N)  <span class="co"># a vector stored on the GPU filled with 1.0 (Float32)</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>y_d <span class="op">=</span> CUDA.<span class="fu">fill</span>(<span class="fl">2.0f0</span>, N)  <span class="co"># a vector stored on the GPU filled with 2.0</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">gpu_add2!</span>(y, x)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    index <span class="op">=</span> <span class="fu">threadIdx</span>().x    <span class="co"># this example only requires linear indexing, so just use `x`</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>    stride <span class="op">=</span> <span class="fu">blockDim</span>().x</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="op">=</span> index<span class="op">:</span>stride<span class="op">:</span><span class="fu">length</span>(y)</span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>        <span class="pp">@inbounds</span> y[i] <span class="op">+=</span> x[i]</span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">nothing</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a><span class="fu">fill!</span>(y_d, <span class="fl">2</span>)</span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a><span class="pp">@cuda</span> threads<span class="op">=</span><span class="fl">256</span> <span class="fu">gpu_add2!</span>(y_d, x_d)</span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">Array</span>(y_d) <span class="op">.==</span> <span class="fl">3.0f0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="19">
+<pre><code>true</code></pre>
+</div>
+</div>
+<p>The key to understanding the SPMD kernel approach is the <code>index = threadIdx().x</code> and <code>stride = blockDim().x</code> portions.</p>
+<p><img src="https://juliagpu.gitlab.io/CUDA.jl/tutorials/intro1.png" class="img-fluid"></p>
+<p>The way kernels are expected to run in parallel is that they are given a specific block of the computation and are expected to write a kernel which only on that small block of the input. This kernel is then called on every separate thread on the GPU, making each CUDA core simultaneously compute each block. Thus as a user in such a SPMD programming model, you never specify the computation globally but instead simply specify how chunks should behave, giving the compiler the leeway to determine the optimal global execution.</p>
+</section>
+<section id="array-based-gpu-computing-models" class="level3" data-number="5.4.4">
+<h3 data-number="5.4.4" class="anchored" data-anchor-id="array-based-gpu-computing-models"><span class="header-section-number">5.4.4</span> Array-Based GPU Computing Models</h3>
+<p>The simplest version of GPU computing is the array-based programming model.</p>
+<div class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>A <span class="op">=</span> <span class="fu">rand</span>(<span class="fl">100</span>,<span class="fl">100</span>); B <span class="op">=</span> <span class="fu">rand</span>(<span class="fl">100</span>,<span class="fl">100</span>)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CUDA</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass to the GPU</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>cuA <span class="op">=</span> <span class="fu">cu</span>(A); cuB <span class="op">=</span> <span class="fu">cu</span>(B)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>cuC <span class="op">=</span> cuA<span class="op">*</span>cuB</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass to the CPU</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>C <span class="op">=</span> <span class="fu">Array</span>(cuC)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="20">
+<pre><code>100×100 Matrix{Float32}:
+ 25.0564  28.1081  24.5791  24.2118  …  29.1066  25.3427  26.785   26.8159
+ 23.8365  26.9323  22.1268  24.394      25.1406  24.2087  23.0141  24.5436
+ 23.8291  27.5819  20.8153  24.5719     26.0579  24.7479  24.5362  24.5483
+ 22.3662  25.2902  20.4605  22.7104     23.514   22.1021  23.3403  23.0844
+ 24.8252  29.7588  22.9885  28.0034     28.7318  26.3997  26.019   27.2803
+ 23.8504  25.0349  20.1403  22.2076  …  24.6679  21.7806  21.7851  22.3799
+ 20.0263  22.023   17.9829  20.6622     21.3617  19.9235  21.8351  21.5375
+ 22.3813  25.5924  19.3125  22.7719     24.4725  23.848   23.5627  23.3131
+ 25.0231  29.8407  23.5434  25.3326     26.7342  24.6092  25.2959  24.4861
+ 22.874   26.0299  20.9581  23.9912     25.9096  23.7     23.8586  24.6916
+ 22.7543  26.2432  20.4097  25.0279  …  27.3809  24.721   24.4355  26.0748
+ 25.4256  30.0091  22.1195  25.6505     26.6411  24.233   25.3694  25.9158
+ 24.6519  27.243   21.2237  24.1523     26.9574  25.4418  23.3858  24.1972
+  ⋮                                  ⋱                             
+ 22.2877  27.4741  21.8779  25.6035     26.5338  23.4227  25.7808  24.7436
+ 25.7797  28.7837  23.0472  26.992      26.7406  25.9313  27.3336  27.8026
+ 23.9616  25.2329  20.9843  23.1032  …  25.5     24.5971  23.6548  26.0905
+ 23.9671  28.4682  21.4784  26.8163     26.3495  25.1586  25.6829  25.9901
+ 24.8729  29.1563  20.8062  25.7028     28.3692  25.0772  23.9394  28.236
+ 24.1732  29.4735  21.1834  25.9207     25.0506  25.0781  24.6209  25.716
+ 24.6369  28.7742  22.0081  26.1276     28.1415  27.08    26.6875  26.4206
+ 25.5436  26.6702  21.8379  24.6884  …  25.2922  24.5365  24.3202  25.257
+ 23.8022  27.3092  21.9259  23.1253     26.5923  23.4442  23.6898  24.4027
+ 25.0953  28.9557  23.7193  25.9754     28.8757  25.4649  25.8137  27.0875
+ 22.7922  26.9324  20.2291  23.9017     26.5135  22.9873  23.975   24.1223
+ 21.9951  26.0003  21.9184  21.6673     23.6457  22.287   22.3392  24.2492</code></pre>
+</div>
+</div>
+<p>Let’s see the transfer times:</p>
+<div class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">cu</span>(A)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  8.144 μs (8 allocations: 39.30 KiB)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="21">
+<pre><code>100×100 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 0.795979   0.820715   0.804492   …  0.173238   0.602618  0.325205
+ 0.248617   0.817344   0.31537       0.99921    0.353251  0.357586
+ 0.562645   0.590865   0.612691      0.835189   0.317652  0.613724
+ 0.0302437  0.108246   0.134883      0.756453   0.844707  0.275566
+ 0.803271   0.454746   0.0568371     0.476437   0.292629  0.436834
+ 0.528203   0.965217   0.3534     …  0.284256   0.51717   0.149346
+ 0.0373348  0.664591   0.305146      0.37815    0.915737  0.26873
+ 0.161136   0.870413   0.747152      0.950921   0.273694  0.240076
+ 0.948914   0.538506   0.163413      0.087484   0.387942  0.0266194
+ 0.232321   0.729338   0.874976      0.342558   0.171119  0.669174
+ 0.749575   0.989877   0.585643   …  0.841039   0.372072  0.480976
+ 0.13611    0.0182909  0.993907      0.772716   0.208189  0.724729
+ 0.738871   0.168995   0.370926      0.902453   0.496412  0.624321
+ ⋮                                ⋱                       
+ 0.850467   0.865298   0.566511      0.484169   0.133182  0.745015
+ 0.424948   0.767975   0.0608416     0.381281   0.962849  0.0890435
+ 0.163066   0.660003   0.823241   …  0.491438   0.353012  0.819618
+ 0.989283   0.663811   0.23109       0.359999   0.718979  0.0412983
+ 0.658782   0.359017   0.475921      0.643057   0.38225   0.922345
+ 0.60349    0.128136   0.304796      0.0785167  0.960574  0.403708
+ 0.904782   0.669525   0.633114      0.594589   0.381224  0.483661
+ 0.716692   0.930138   0.359974   …  0.739195   0.365376  0.108808
+ 0.253205   0.974106   0.696407      0.876903   0.518735  0.241752
+ 0.730507   0.961051   0.208908      0.767898   0.723701  0.709793
+ 0.803944   0.900472   0.60208       0.988069   0.471301  0.870057
+ 0.331299   0.979528   0.293971      0.121811   0.331233  0.993614</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@btime</span> <span class="fu">Array</span>(cuC)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  12.888 μs (3 allocations: 39.12 KiB)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="22">
+<pre><code>100×100 Matrix{Float32}:
+ 25.0564  28.1081  24.5791  24.2118  …  29.1066  25.3427  26.785   26.8159
+ 23.8365  26.9323  22.1268  24.394      25.1406  24.2087  23.0141  24.5436
+ 23.8291  27.5819  20.8153  24.5719     26.0579  24.7479  24.5362  24.5483
+ 22.3662  25.2902  20.4605  22.7104     23.514   22.1021  23.3403  23.0844
+ 24.8252  29.7588  22.9885  28.0034     28.7318  26.3997  26.019   27.2803
+ 23.8504  25.0349  20.1403  22.2076  …  24.6679  21.7806  21.7851  22.3799
+ 20.0263  22.023   17.9829  20.6622     21.3617  19.9235  21.8351  21.5375
+ 22.3813  25.5924  19.3125  22.7719     24.4725  23.848   23.5627  23.3131
+ 25.0231  29.8407  23.5434  25.3326     26.7342  24.6092  25.2959  24.4861
+ 22.874   26.0299  20.9581  23.9912     25.9096  23.7     23.8586  24.6916
+ 22.7543  26.2432  20.4097  25.0279  …  27.3809  24.721   24.4355  26.0748
+ 25.4256  30.0091  22.1195  25.6505     26.6411  24.233   25.3694  25.9158
+ 24.6519  27.243   21.2237  24.1523     26.9574  25.4418  23.3858  24.1972
+  ⋮                                  ⋱                             
+ 22.2877  27.4741  21.8779  25.6035     26.5338  23.4227  25.7808  24.7436
+ 25.7797  28.7837  23.0472  26.992      26.7406  25.9313  27.3336  27.8026
+ 23.9616  25.2329  20.9843  23.1032  …  25.5     24.5971  23.6548  26.0905
+ 23.9671  28.4682  21.4784  26.8163     26.3495  25.1586  25.6829  25.9901
+ 24.8729  29.1563  20.8062  25.7028     28.3692  25.0772  23.9394  28.236
+ 24.1732  29.4735  21.1834  25.9207     25.0506  25.0781  24.6209  25.716
+ 24.6369  28.7742  22.0081  26.1276     28.1415  27.08    26.6875  26.4206
+ 25.5436  26.6702  21.8379  24.6884  …  25.2922  24.5365  24.3202  25.257
+ 23.8022  27.3092  21.9259  23.1253     26.5923  23.4442  23.6898  24.4027
+ 25.0953  28.9557  23.7193  25.9754     28.8757  25.4649  25.8137  27.0875
+ 22.7922  26.9324  20.2291  23.9017     26.5135  22.9873  23.975   24.1223
+ 21.9951  26.0003  21.9184  21.6673     23.6457  22.287   22.3392  24.2492</code></pre>
+</div>
+</div>
+<p>The cost transferring is about 20μs-50μs in each direction, meaning that one needs to be doing operations that cost at least 200μs for GPUs to break even. A good rule of thumb is that GPU computations should take at least a millisecond, or GPU memory should be re-used.</p>
+</section>
+<section id="summary-of-gpus" class="level3" data-number="5.4.5">
+<h3 data-number="5.4.5" class="anchored" data-anchor-id="summary-of-gpus"><span class="header-section-number">5.4.5</span> Summary of GPUs</h3>
+<ul>
+<li>GPUs cores are slow</li>
+<li>GPUs are SPMD</li>
+<li>GPUs are generally used for linear algebra</li>
+<li>Suitable for SPMD 1ms computations</li>
+</ul>
+</section>
+</section>
+<section id="xeon-phi-accelerators-and-opencl" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="xeon-phi-accelerators-and-opencl"><span class="header-section-number">5.5</span> Xeon Phi Accelerators and OpenCL</h2>
+<p>Other architectures exist to keep in mind. Xeon Phis are a now-defunct accelerator that used X86 (standard processors) as the base, using hundreds of them. For example, the Knights Landing series had 256 core accelerator cards. These were all clocked down, meaning they were still slower than a standard CPU, but there were less restrictions on SPMD (though SPMD-like computations were still preferred in order to heavily make use of SIMD). However, because machine learning essentially only needs linear algebra, and linear algebra is faster when restricting to SPMD-architectures, this failed. These devices can still be found on many high end clusters.</p>
+<p>One alternative to CUDA is OpenCL which supports alternative architectures such as the Xeon Phi at the same time that it supports GPUs. However, one of the issues with OpenCL is that its BLAS implementation currently does not match the speed of CuBLAS, which makes NVIDIA-specific libraries still the king of machine learning and most scientific computing.</p>
+</section>
+<section id="tpu-computing" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="tpu-computing"><span class="header-section-number">5.6</span> TPU Computing</h2>
+<p>TPUs are tensor processing units, which is Google’s newest accelerator technology. They are essentially just “tensor operation compilers”, which in computer science speak is simply higher dimensional linear algebra. To do this, they internally utilize a BFloat16 type, which is a 16-bit floating point number with the same exponent size as a Float32 with an 8-bit significant. This means that computations are highly prone to <em>catastrophic cancellation</em>. This computational device only works because BFloat16 has primitive operations for FMA which allows 32-bit-like accuracy of multiply-add operations, and thus computations which are only dot products (linear algebra) end up okay. Thus this is simply a GPU-like device which has gone further to completely specialize in linear algebra.</p>
+</section>
+<section id="multiprocessing-distributed-computing" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="multiprocessing-distributed-computing"><span class="header-section-number">5.7</span> Multiprocessing (Distributed Computing)</h2>
+<p>While multithreading computes with multiple threads, multiprocessing computes with multiple independent processes. Note that processes do not share any memory, not heap or data, and thus this mode of computing also allows for <em>distributed computations</em>, which is the case where processes may be on separate computing hardware. However, even if they are on the same hardware, the lack of a shared address space means that multiprocessing has to do <em>message passing</em>, i.e. send data from one process to the other.</p>
+<section id="distributed-tasks-with-explicit-memory-handling-the-master-worker-model" class="level3" data-number="5.7.1">
+<h3 data-number="5.7.1" class="anchored" data-anchor-id="distributed-tasks-with-explicit-memory-handling-the-master-worker-model"><span class="header-section-number">5.7.1</span> Distributed Tasks with Explicit Memory Handling: The Master-Worker Model</h3>
+<p>Given the amount of control over data handling, there are many different models for distributed computing. The simplest, the one that Julia’s Distributed Standard Library defaults to, is the <em>master-worker model</em>. The master-worker model has one process, deemed the master, which controls the worker processes.</p>
+<p>Here we can start by adding some new worker processes:</p>
+<div class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Distributed</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">addprocs</span>(<span class="fl">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This adds 4 worker processes for the master to control. The simplest computations are those where the master process gives the worker process a job which returns the value afterwards. For example, a <code>pmap</code> operation or <code>@distributed</code> loop gives the worker a function to execute, along with the data, and the worker then computes and returns the result.</p>
+<p>At a lower level, this is done by <code>Distributed.@spawn</code>ing jobs, or using a <code>remotecall</code> and <code>fetch</code>ing the result. <a href="https://github.com/ChrisRackauckas/ParallelDataTransfer.jl">ParallelDataTransfer.jl</a> gives an extended set of primitive message passing operations. For example, we can explicitly tell it to compute a function <code>f</code> on the remote process like:</p>
+<div class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@everywhere</span> <span class="fu">f</span>(x) <span class="op">=</span> x<span class="op">.^</span><span class="fl">2</span> <span class="co"># Define this function on all processes</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> <span class="fu">remotecall</span>(f,<span class="fl">2</span>,<span class="fu">randn</span>(<span class="fl">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>remotecall</code> is a non-blocking operation that returns a <code>Future</code>. To access the data, one should use the blocking operation <code>fetch</code> to receive the data:</p>
+<div class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>xsq <span class="op">=</span> <span class="fu">fetch</span>(t)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="distributed-tasks-with-implicit-memory-handling-distributed-task-based-parallelism" class="level3" data-number="5.7.2">
+<h3 data-number="5.7.2" class="anchored" data-anchor-id="distributed-tasks-with-implicit-memory-handling-distributed-task-based-parallelism"><span class="header-section-number">5.7.2</span> Distributed Tasks with Implicit Memory Handling: Distributed Task-Based Parallelism</h3>
+<p>Another popular programming model for distributed computation is task-based parallelism but where all of the memory handling is implicit. Since, unlike the shared memory parallelism case, data transfers are required for given processes to share heap allocated values, distributed task-based parallelism libraries tend to want a global view of the whole computation in order to build a sophisticated schedule that includes where certain data lives and when transfers will occur. Because of this, distributed task-based parallelism libraries tend to want the entire <strong>computational graph</strong> of the computation, to be able to restructure the graph as necessary with their own data transfer portions spliced into the compute. Examples of this kind of framework are:</p>
+<ul>
+<li>Tensorflow</li>
+<li>dask (“distributed tasks”)</li>
+<li>Dagger.jl</li>
+</ul>
+<p>Using these kinds of libraries requires building a directed acyclic graph (DAG). For example, the following showcases how to use Dagger.jl to represent a bunch of summations:</p>
+<div class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Dagger</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a><span class="fu">add1</span>(value) <span class="op">=</span> value <span class="op">+</span> <span class="fl">1</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="fu">add2</span>(value) <span class="op">=</span> value <span class="op">+</span> <span class="fl">2</span></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a><span class="fu">combine</span>(a<span class="op">...</span>) <span class="op">=</span> <span class="fu">sum</span>(a)</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> <span class="fu">delayed</span>(add1)(<span class="fl">4</span>)</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> <span class="fu">delayed</span>(add2)(p)</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="fu">delayed</span>(add1)(<span class="fl">3</span>)</span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> <span class="fu">delayed</span>(combine)(p, q, r)</span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a><span class="pp">@assert</span> <span class="fu">collect</span>(s) <span class="op">==</span> <span class="fl">16</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Once the global computation is specified, commands like <code>collect</code> are used to instantiate the graph on given input data, which then run the computation in a (potentially) distributed manner, depending on internal scheduler heuristics.</p>
+</section>
+<section id="distributed-array-based-parallelism-sharedarrays-elemental-and-darrays" class="level3" data-number="5.7.3">
+<h3 data-number="5.7.3" class="anchored" data-anchor-id="distributed-array-based-parallelism-sharedarrays-elemental-and-darrays"><span class="header-section-number">5.7.3</span> Distributed Array-Based Parallelism: SharedArrays, Elemental, and DArrays</h3>
+<p>Because array operations are a standard way to compute in scientific computing, there are higher level primitives to help with message passing. A <code>SharedArray</code> is an array which acts like a shared memory device. This means that every change to a <code>SharedArray</code> causes message passing to keep them in sync, and thus this should be used with a performance caution. <a href="https://github.com/JuliaParallel/DistributedArrays.jl">DistributedArrays.jl</a> is a parallel array type which has local blocks and can be used for writing higher level abstractions with explicit message passing. Because it is currently missing high-level parallel linear algebra, currently the recommended tool for distributed linear algebra is <a href="https://github.com/JuliaParallel/Elemental.jl">Elemental.jl</a>.</p>
+</section>
+<section id="mapreduce-hadoop-and-spark-the-map-reduce-model" class="level3" data-number="5.7.4">
+<h3 data-number="5.7.4" class="anchored" data-anchor-id="mapreduce-hadoop-and-spark-the-map-reduce-model"><span class="header-section-number">5.7.4</span> MapReduce, Hadoop, and Spark: The Map-Reduce Model</h3>
+<p>Many data-parallel operations work by mapping a function <code>f</code> onto each piece of data and then reducing it. For example, the sum of squares maps the function <code>x -&gt; x^2</code> onto each value, and then these values are reduced by performing a summation. MapReduce was a Google framework in the 2000’s built around this as the parallel computing concept, and current data-handling frameworks, like Hadoop and Spark, continue this as the core distributed programming model.</p>
+<p>In Julia, there exists the <code>mapreduce</code> function for performing serial mapreduce operations. It also work on GPUs. However, it does not auto-distribute. For distributed map-reduce programming, the <code>@distributed</code> for-loop macro can be used. For example, sum of squares of random numbers is:</p>
+<div class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@distributed</span> (<span class="op">+</span>) <span class="cf">for</span> i <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">1000</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand</span>()<span class="op">^</span><span class="fl">2</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>One can see that computing summary statistics is easily done in this framework which is why it was majorly adopted among “big data” communities.</p>
+<p><code>@distributed</code> uses a static scheduler. The dynamic scheduling equivalent is <code>pmap</code>:</p>
+<div class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pmap</span>(<span class="fu">i-&gt;rand</span>()<span class="op">^</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">100</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>which will dynamically allocate jobs to processes as they declare they have finished jobs. This thus has the same performance difference behavior as <code>Threads.@threads</code> vs <code>Threads.@spawn</code>.</p>
+</section>
+<section id="mpi-the-distributed-spmd-model" class="level3" data-number="5.7.5">
+<h3 data-number="5.7.5" class="anchored" data-anchor-id="mpi-the-distributed-spmd-model"><span class="header-section-number">5.7.5</span> MPI: The Distributed SPMD Model</h3>
+<p>The main way to do high-performance multiprocessing is <em>MPI</em>, which is an old distributed computing interface from the C/Fortran days. Julia has access to the MPI programming model through MPI.jl. The programming model for MPI is that every computer is running the same program, and synchronization is performed by blocking communication. For example, let’s look at the following:</p>
+<div class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MPI</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>MPI.<span class="fu">Init</span>()</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>comm <span class="op">=</span> MPI.COMM_WORLD</span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>rank <span class="op">=</span> MPI.<span class="fu">Comm_rank</span>(comm)</span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>size <span class="op">=</span> MPI.<span class="fu">Comm_size</span>(comm)</span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>dst <span class="op">=</span> <span class="fu">mod</span>(rank<span class="op">+</span><span class="fl">1</span>, size)</span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>src <span class="op">=</span> <span class="fu">mod</span>(rank<span class="op">-</span><span class="fl">1</span>, size)</span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="fl">4</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>send_mesg <span class="op">=</span> <span class="fu">Array</span><span class="dt">{Float64}</span>(<span class="cn">undef</span>, N)</span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>recv_mesg <span class="op">=</span> <span class="fu">Array</span><span class="dt">{Float64}</span>(<span class="cn">undef</span>, N)</span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a><span class="fu">fill!</span>(send_mesg, <span class="fu">Float64</span>(rank))</span>
+<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a>rreq <span class="op">=</span> MPI.<span class="fu">Irecv!</span>(recv_mesg, src,  src<span class="op">+</span><span class="fl">32</span>, comm)</span>
+<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"</span><span class="sc">$</span>rank<span class="st">: Sending   </span><span class="sc">$</span>rank<span class="st"> -&gt; </span><span class="sc">$</span>dst<span class="st"> = </span><span class="sc">$</span>send_mesg<span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a>sreq <span class="op">=</span> MPI.<span class="fu">Isend</span>(send_mesg, dst, rank<span class="op">+</span><span class="fl">32</span>, comm)</span>
+<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-23"><a href="#cb55-23" aria-hidden="true" tabindex="-1"></a>stats <span class="op">=</span> MPI.<span class="fu">Waitall!</span>([rreq, sreq])</span>
+<span id="cb55-24"><a href="#cb55-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-25"><a href="#cb55-25" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"</span><span class="sc">$</span>rank<span class="st">: Received </span><span class="sc">$</span>src<span class="st"> -&gt; </span><span class="sc">$</span>rank<span class="st"> = </span><span class="sc">$</span>recv_mesg<span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb55-26"><a href="#cb55-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-27"><a href="#cb55-27" aria-hidden="true" tabindex="-1"></a>MPI.<span class="fu">Barrier</span>(comm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<pre class="{shell}"><code>#| eval: false
+&gt; mpiexecjl -n 3 julia examples/04-sendrecv.jl
+1: Sending   1 -&gt; 2 = [1.0, 1.0, 1.0, 1.0]
+0: Sending   0 -&gt; 1 = [0.0, 0.0, 0.0, 0.0]
+1: Received 0 -&gt; 1 = [0.0, 0.0, 0.0, 0.0]
+2: Sending   2 -&gt; 0 = [2.0, 2.0, 2.0, 2.0]
+0: Received 2 -&gt; 0 = [2.0, 2.0, 2.0, 2.0]
+2: Received 1 -&gt; 2 = [1.0, 1.0, 1.0, 1.0]</code></pre>
+<p>Let’s investigate this a little bit. Think about having two computers run this line-by-line side by side. They will both locally build arrays, and then call <code>MPI.Irecv!</code>, which is an asynchronous non-blocking call to listen for a message from a given <code>rank</code> (a rank is the ID for a given process). Then they call their <code>sreq = MPI.Isend</code> function, which is an asynchronous non-blocking call to send a message <code>send_mesg</code> to the chosen <code>rank</code>. When the expected message is found, <code>MPI.Irecv!</code> will then run on its green thread and finish, updating the <code>recv_mesg</code> with the information from the message. However, in order to make sure all of the messages are received, we have added in a blocking operation <code>MPI.Waitall!([rreq, sreq])</code>, which will block all further execution on the given rank until both its <code>rreq</code> and <code>sreq</code> tasks are completed. After that is done, each given rank will have its updated data, and the script will continue on all ranks.</p>
+<p>This model is thus very asynchronous and allows for many different computers to run one highly parallelized program, managing the data transmissions in a sparse way without a single computer in charge of managing the whole computation. However, it can be prone to deadlock, since errors in the program may for example require rank 1 to receive a message from rank 2 before continuing the program, but rank 2 won’t continue to program until it receives a message from rank 1. For this reason, while MPI has been the most successful large-scale distributed computing model and almost all major high-performance computing (HPC) cluster competitions have been won by codes utilizing the MPI model, the MPI model is nowadays considered a last resort due to these safety issues.</p>
+</section>
+<section id="summary-of-multiprocessing" class="level3" data-number="5.7.6">
+<h3 data-number="5.7.6" class="anchored" data-anchor-id="summary-of-multiprocessing"><span class="header-section-number">5.7.6</span> Summary of Multiprocessing</h3>
+<ul>
+<li>Cost is hardware dependent: only suitable for 1ms or higher depending on the connections through which the messages are being passed and the topology of the network.</li>
+<li>The Master-worker programming model is Julia’s <code>Distributed</code> model</li>
+<li>The Map-reduce programming model is a common data-handling model</li>
+<li>Array-based distributed computations are another abstraction, used in all forms of parallelism.</li>
+<li>MPI is a SPMD model of distributed computing, where each process is completely independent and one just controls the memory handling.</li>
+</ul>
+</section>
+</section>
+<section id="the-bait-and-switch-parallelism-is-about-programming-models" class="level2" data-number="5.8">
+<h2 data-number="5.8" class="anchored" data-anchor-id="the-bait-and-switch-parallelism-is-about-programming-models"><span class="header-section-number">5.8</span> The Bait-and-switch: Parallelism is about Programming Models</h2>
+<p>While this looked like a lecture about parallel programming at the different levels and types of hardware, this wide overview showcases that the real underlying commonality within parallel program is in the <strong>parallel programming models</strong>, of which there are not too many. There are:</p>
+<ul>
+<li>Map-reduce parallelism models. <code>pmap</code>, MapReduce (Hadoop/Spark)
+<ul>
+<li>Pros: Easy to use</li>
+<li>Cons: Requires that your program is specifically only mapping functions <code>f</code> and reducing them. That said, many data science operations like <code>mean</code>, <code>variance</code>, <code>maximum</code>, etc. can be represented as map-reduce calls, which lead to the popularity of these approaches for “big data” operations.</li>
+</ul></li>
+<li>Array-based parallelism models. SIMD (at the compiler level), <code>CuArray</code>, <code>DistributedArray</code>, <code>PyTorch.torch</code>, …
+<ul>
+<li>Pros: Easy to use, can have very fast library implementations for specific functions</li>
+<li>Cons: Less control and restricted to specific functions implemented by the library. Parallelism matches the data structure, so it requires the user to be careful and know the best way to split the data.</li>
+</ul></li>
+<li>Loop-based parallelism models. <code>Threads.@threads</code>, <code>@distributed</code>, OpenMP, MATLAB’s <code>parfor</code>, Chapel’s iterator parallelism
+<ul>
+<li>Pros: Easy to use, almost no code change can make existing loops parallelized</li>
+<li>Cons: Refined operations, like locking and sharing data, can be awkward to write. Less control over fine details like scheduling, meaning less opportunities to optimize.</li>
+</ul></li>
+<li>Task-based parallelism models with implicit distributed data handling. <code>Threads.@spawn</code>, Dagger.jl, TensorFlow, dask
+<ul>
+<li>Pros: Relatively high level, low risk of errors since parallelism is mostly handled for the user. User simply describes which functions to call in what order.</li>
+<li>Cons: When used on distributed systems, implicit data handling is hard, meaning it’s generally not as efficient if you don’t optimize the code yourself or help the optimizer, and these require specific programming constructs for building the computational graph. Note this is only a downside for distributed data parallelism, whereas when applied to shared memory systems these aspects no longer require handling by the task scheduler.</li>
+</ul></li>
+<li>Task-based parallelism models with explicit data handling. <code>Distributed.@spawn</code>
+<ul>
+<li>Pros: Allows for control over what compute hardware will have specific pieces of data and allows for transferring data manually.</li>
+<li>Cons: Requires transferring data manually. All computations are managed by a single process/computer/node and thus it can have some issues scaling to extreme (1000+ node) computing situations.</li>
+</ul></li>
+<li>SPMD kernel parallelism models. CUDA, MPI, KernelAbstractions.jl
+<ul>
+<li>Pros: Reduces the problem for the user to only specify what happens in small chunks of the problem. Works on accelerator hardware like GPUs, TPUs, and beyond.</li>
+<li>Cons: Only works for computations that be represented block-wise, and relies on the compiler to generate good code.</li>
+</ul></li>
+</ul>
+<p>In this sense, the different parallel programming “languages” and features are much more similar than they are all different, falling into similar categories.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  let localAlternateSentinel = 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./parallelism_overview.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">The Basics of Single Node Parallel Computing</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./discretizing_odes.html" class="pagination-link">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Ordinary Differential Equations, Applications and Discretizations</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
